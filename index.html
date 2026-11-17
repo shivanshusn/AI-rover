@@ -1,0 +1,3493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>MARS-X6 PRO • 1x L298N Landscape FPV Cockpit & Instant Throttle</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #121214;
+    --panel: #1a1a1a;
+    --gold: #fab515;
+    --cyan: #00f0ff;
+    --ok: #22c55e;
+    --danger: #ef4444;
+    --hud-alpha: 0.78;
+  }
+  * {
+    box-sizing: border-box;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    color: #f3f4f6;
+    font-family: 'Inter', system-ui, sans-serif;
+    overflow: hidden;
+  }
+  .font-hud {
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 0.04em;
+  }
+  .hud-glass {
+    background: rgba(20, 20, 24, var(--hud-alpha));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(250, 181, 21, 0.32);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+  }
+  .hud-pill {
+    background: rgba(16, 16, 20, 0.88);
+    border: 1px solid rgba(250, 181, 21, 0.35);
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .drop-btn {
+    background: rgba(24, 24, 28, 0.9);
+    border: 1px solid rgba(250, 181, 21, 0.45);
+    color: #fde68a;
+    padding: 4px 10px;
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+    cursor: pointer;
+  }
+  .drop-btn:hover, .drop-btn.open {
+    background: #fab515;
+    color: #111;
+    border-color: #fff;
+    box-shadow: 0 0 14px rgba(250, 181, 21, 0.65);
+  }
+  .dropdown-panel {
+    position: absolute;
+    top: 46px;
+    z-index: 40;
+    width: 310px;
+    max-width: 92vw;
+    border-radius: 16px;
+    padding: 12px;
+    background: rgba(18, 18, 22, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(250, 181, 21, 0.6);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+  }
+  .steer-btn {
+    position: relative;
+    background: linear-gradient(145deg, rgba(38, 38, 42, var(--hud-alpha)), rgba(18, 18, 20, var(--hud-alpha)));
+    border: 2px solid rgba(250, 181, 21, 0.6);
+    color: var(--gold);
+    border-radius: 16px;
+    transition: all 0.1s ease;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5), inset 0 0 10px rgba(250, 181, 21, 0.12);
+    touch-action: none;
+  }
+  .steer-btn:active, .steer-btn.active {
+    background: linear-gradient(145deg, #fab515, #d99000);
+    color: #111;
+    border-color: #fff;
+    transform: scale(0.94);
+    box-shadow: 0 0 22px rgba(250, 181, 21, 0.85);
+  }
+  .spin-btn {
+    background: linear-gradient(145deg, rgba(20, 32, 42, var(--hud-alpha)), rgba(12, 20, 28, var(--hud-alpha)));
+    border: 1.5px solid rgba(0, 240, 255, 0.55);
+    color: var(--cyan);
+    border-radius: 12px;
+    transition: all 0.1s ease;
+    touch-action: none;
+  }
+  .spin-btn:active, .spin-btn.active {
+    background: var(--cyan);
+    color: #000;
+    box-shadow: 0 0 18px rgba(0, 240, 255, 0.8);
+    transform: scale(0.94);
+  }
+  .gear-btn {
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    background: rgba(20, 20, 24, 0.85);
+    color: #9ca3af;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 800;
+    border-radius: 10px;
+    transition: all 0.15s ease;
+  }
+  .gear-btn.active-f {
+    background: linear-gradient(135deg, #22c55e, #15803d);
+    color: #fff;
+    border-color: #86efac;
+    box-shadow: 0 0 14px rgba(34, 197, 94, 0.7);
+  }
+  .gear-btn.active-n {
+    background: linear-gradient(135deg, #fab515, #b45309);
+    color: #111;
+    border-color: #fde047;
+    box-shadow: 0 0 12px rgba(250, 181, 21, 0.6);
+  }
+  .gear-btn.active-r {
+    background: linear-gradient(135deg, #ef4444, #991b1b);
+    color: #fff;
+    border-color: #fca5a5;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.75);
+  }
+  #leverTrack {
+    position: relative;
+    width: 60px;
+    height: 175px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(34,197,94,0.18) 0%, rgba(20,20,22,0.92) 50%, rgba(239,68,68,0.18) 100%);
+    border: 2px solid rgba(250, 181, 21, 0.6);
+    box-shadow: inset 0 4px 16px rgba(0,0,0,0.85);
+    touch-action: none;
+  }
+  #leverFill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 0%;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(250, 181, 21, 0.65), rgba(250, 181, 21, 0.15));
+    pointer-events: none;
+    transition: height 0.04s linear;
+  }
+  #leverKnob {
+    position: absolute;
+    left: -7px;
+    right: -7px;
+    height: 34px;
+    bottom: 0%;
+    transform: translateY(50%);
+    background: linear-gradient(180deg, #fab515, #c27803);
+    border: 2px solid #fff;
+    border-radius: 9px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.8), 0 0 12px rgba(250, 181, 21, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 900;
+    color: #111;
+    pointer-events: none;
+  }
+  .led-btn.on, .volt-preset.on {
+    background: #fab515 !important;
+    color: #111 !important;
+    border-color: #fff !important;
+    box-shadow: 0 0 12px #fab515;
+  }
+  .stunt-chip {
+    background: rgba(32, 32, 36, 0.9);
+    border: 1px solid rgba(250, 181, 21, 0.35);
+    border-radius: 9px;
+    padding: 6px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fde68a;
+    transition: all 0.12s;
+  }
+  .stunt-chip:active, .stunt-chip.active {
+    background: var(--gold);
+    color: #111;
+    transform: scale(0.95);
+  }
+  input[type=range] {
+    accent-color: #fab515;
+  }
+  .custom-scroll::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  .custom-scroll::-webkit-scrollbar-thumb {
+    background: rgba(250, 181, 21, 0.4);
+    border-radius: 99px;
+  }
+
+  /* =========================================================================
+     100% OFFLINE BUILT-IN TAILWIND FALLBACK ENGINE (WORKS WITHOUT INTERNET!)
+     Fixes unstyled white buttons & overlapping panels on Chrome/Firefox at 192.168.4.1
+     ========================================================================= */
+  *, ::before, ::after { border-width: 0; border-style: solid; border-color: rgba(255,255,255,0.15); }
+  button, input, select { font-family: inherit; font-size: 100%; font-weight: inherit; line-height: inherit; color: inherit; margin: 0; padding: 0; background-color: transparent; }
+  button, select { text-transform: none; cursor: pointer; }
+  h1, h2, h3, p, ul { margin: 0; }
+  table { text-indent: 0; border-color: inherit; border-collapse: collapse; }
+  .hidden { display: none !important; }
+  .block { display: block; }
+  .inline-block { display: inline-block; }
+  .flex { display: flex; }
+  .grid { display: grid; }
+  .relative { position: relative; }
+  .absolute { position: absolute; }
+  .fixed { position: fixed; }
+  .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+  .inset-x-0 { left: 0; right: 0; }
+  .inset-x-2 { left: 0.5rem; right: 0.5rem; }
+  .top-12 { top: 3rem; }
+  .top-1\/4 { top: 25%; }
+  .top-2\/4 { top: 50%; }
+  .top-3\/4 { top: 75%; }
+  .right-2 { right: 0.5rem; }
+  .right-4 { right: 1rem; }
+  .z-10 { z-index: 10; }
+  .z-30 { z-index: 30; }
+  .z-50 { z-index: 50; }
+  .flex-1 { flex: 1 1 0%; }
+  .flex-col { flex-direction: column; }
+  .flex-wrap { flex-wrap: wrap; }
+  .items-center { align-items: center; }
+  .items-end { align-items: flex-end; }
+  .justify-center { justify-content: center; }
+  .justify-between { justify-content: space-between; }
+  .justify-around { justify-content: space-around; }
+  .justify-end { justify-content: flex-end; }
+  .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .col-span-2 { grid-column: span 2 / span 2; }
+  .gap-0\.5 { gap: 0.125rem; }
+  .gap-1 { gap: 0.25rem; }
+  .gap-1\.5 { gap: 0.375rem; }
+  .gap-2 { gap: 0.5rem; }
+  .gap-3 { gap: 0.75rem; }
+  .gap-4 { gap: 1rem; }
+  .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.25rem; }
+  .space-y-2 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
+  .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; }
+  .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+  .divide-y > :not([hidden]) ~ :not([hidden]) { border-top-width: 1px; border-color: rgba(255,255,255,0.1); }
+  .w-full { width: 100%; }
+  .w-2 { width: 0.5rem; }
+  .w-7 { width: 1.75rem; }
+  .w-20 { width: 5rem; }
+  .w-32 { width: 8rem; }
+  .w-52 { width: 13rem; }
+  .w-56 { width: 14rem; }
+  .h-full { height: 100%; }
+  .h-1\.5 { height: 0.375rem; }
+  .h-2 { height: 0.5rem; }
+  .h-7 { height: 1.75rem; }
+  .h-36 { height: 9rem; }
+  .h-\[calc\(100\%-42px\)\] { height: calc(100% - 42px); }
+  .max-w-lg { max-width: 32rem; }
+  .max-w-5xl { max-width: 64rem; }
+  .max-w-6xl { max-width: 72rem; }
+  .max-h-\[92vh\] { max-height: 92vh; }
+  .mx-auto { margin-left: auto; margin-right: auto; }
+  .mt-1 { margin-top: 0.25rem; }
+  .mt-2 { margin-top: 0.5rem; }
+  .mb-1 { margin-bottom: 0.25rem; }
+  .mb-1\.5 { margin-bottom: 0.375rem; }
+  .mb-2 { margin-bottom: 0.5rem; }
+  .p-0\.5 { padding: 0.125rem; }
+  .p-1 { padding: 0.25rem; }
+  .p-2\.5 { padding: 0.625rem; }
+  .p-3 { padding: 0.75rem; }
+  .p-4 { padding: 1rem; }
+  .px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+  .px-1\.5 { padding-left: 0.375rem; padding-right: 0.375rem; }
+  .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+  .px-2\.5 { padding-left: 0.625rem; padding-right: 0.625rem; }
+  .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+  .px-3\.5 { padding-left: 0.875rem; padding-right: 0.875rem; }
+  .px-4 { padding-left: 1rem; padding-right: 1rem; }
+  .py-0\.2 { padding-top: 1px; padding-bottom: 1px; }
+  .py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+  .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  .py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+  .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+  .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+  .py-3\.5 { padding-top: 0.875rem; padding-bottom: 0.875rem; }
+  .pt-1 { padding-top: 0.25rem; }
+  .pt-2 { padding-top: 0.5rem; }
+  .pb-1\.5 { padding-bottom: 0.375rem; }
+  .pb-2 { padding-bottom: 0.5rem; }
+  .pb-8 { padding-bottom: 2rem; }
+  .pl-4 { padding-left: 1rem; }
+  .rounded { border-radius: 0.25rem; }
+  .rounded-lg { border-radius: 0.5rem; }
+  .rounded-xl { border-radius: 0.75rem; }
+  .rounded-2xl { border-radius: 1rem; }
+  .rounded-full { border-radius: 9999px; }
+  .border { border-width: 1px; }
+  .border-b { border-bottom-width: 1px; }
+  .border-t { border-top-width: 1px; }
+  .border-white\/10 { border-color: rgba(255,255,255,0.1); }
+  .border-white\/15 { border-color: rgba(255,255,255,0.15); }
+  .border-white\/20 { border-color: rgba(255,255,255,0.2); }
+  .border-white\/25 { border-color: rgba(255,255,255,0.25); }
+  .border-\[\#fab515\] { border-color: #fab515; }
+  .border-\[\#fab515\]\/40 { border-color: rgba(250,181,21,0.4); }
+  .border-\[\#fab515\]\/45 { border-color: rgba(250,181,21,0.45); }
+  .border-\[\#fab515\]\/50 { border-color: rgba(250,181,21,0.5); }
+  .border-cyan-400 { border-color: #22d3ee; }
+  .border-cyan-400\/50 { border-color: rgba(34,211,238,0.5); }
+  .border-emerald-400 { border-color: #34d399; }
+  .border-emerald-500\/40 { border-color: rgba(16,185,129,0.4); }
+  .border-amber-400\/40 { border-color: rgba(251,191,36,0.4); }
+  .border-amber-400\/60 { border-color: rgba(251,191,36,0.6); }
+  .border-blue-400\/40 { border-color: rgba(96,165,250,0.4); }
+  .border-pink-400\/40 { border-color: rgba(244,114,182,0.4); }
+  .border-purple-400\/50 { border-color: rgba(192,132,252,0.5); }
+  .border-red-400\/40, .border-red-500\/40 { border-color: rgba(248,113,113,0.4); }
+  .bg-black { background-color: #000; }
+  .bg-black\/50 { background-color: rgba(0,0,0,0.5); }
+  .bg-black\/55 { background-color: rgba(0,0,0,0.55); }
+  .bg-black\/60 { background-color: rgba(0,0,0,0.6); }
+  .bg-black\/65 { background-color: rgba(0,0,0,0.65); }
+  .bg-black\/70 { background-color: rgba(0,0,0,0.7); }
+  .bg-black\/80 { background-color: rgba(0,0,0,0.8); }
+  .bg-\[\#121214\]\/95 { background-color: rgba(18,18,20,0.95); }
+  .bg-white\/10 { background-color: rgba(255,255,255,0.1); }
+  .bg-\[\#fab515\] { background-color: #fab515; }
+  .bg-\[\#fab515\]\/20, .\!bg-\[\#fab515\]\/20 { background-color: rgba(250,181,21,0.2) !important; }
+  .bg-amber-400 { background-color: #fbbf24; }
+  .bg-amber-500\/20 { background-color: rgba(245,158,11,0.2); }
+  .bg-emerald-400 { background-color: #34d399; }
+  .bg-emerald-500\/20 { background-color: rgba(16,185,129,0.2); }
+  .bg-emerald-600 { background-color: #059669; }
+  .bg-red-500 { background-color: #ef4444; }
+  .bg-red-600 { background-color: #dc2626; }
+  .bg-red-800 { background-color: #991b1b; }
+  .bg-gray-700 { background-color: #374151; }
+  .bg-red-500\/20 { background-color: rgba(239,68,68,0.2); }
+  .bg-cyan-400 { background-color: #22d3ee; }
+  .bg-cyan-500\/20 { background-color: rgba(6,182,212,0.2); }
+  .bg-cyan-500\/25 { background-color: rgba(6,182,212,0.25); }
+  .bg-blue-500\/20 { background-color: rgba(59,130,246,0.2); }
+  .bg-pink-500\/20 { background-color: rgba(236,72,153,0.2); }
+  .bg-purple-500\/25 { background-color: rgba(168,85,247,0.25); }
+  .\!bg-purple-500 { background-color: #a855f7 !important; }
+  .\!bg-cyan-400 { background-color: #22d3ee !important; }
+  .\!bg-red-600 { background-color: #dc2626 !important; }
+  .\!bg-emerald-500\/30 { background-color: rgba(16,185,129,0.3) !important; }
+  .text-white, .\!text-white { color: #fff !important; }
+  .text-black, .\!text-black { color: #000 !important; }
+  .text-\[\#fab515\] { color: #fab515; }
+  .text-gray-200 { color: #e5e7eb; }
+  .text-gray-300 { color: #d1d5db; }
+  .text-gray-400 { color: #9ca3af; }
+  .text-emerald-300 { color: #6ee7b7; }
+  .text-emerald-400 { color: #34d399; }
+  .text-cyan-200 { color: #a5f3fc; }
+  .text-cyan-300 { color: #67e8f9; }
+  .text-cyan-400 { color: #22d3ee; }
+  .text-amber-300 { color: #fcd34d; }
+  .text-blue-300 { color: #93c5fd; }
+  .text-pink-300 { color: #f9a8d4; }
+  .text-purple-200 { color: #e9d5ff; }
+  .text-purple-300 { color: #d8b4fe; }
+  .text-red-200 { color: #fecaca; }
+  .text-red-300 { color: #fca5a5; }
+  .text-\[8px\] { font-size: 8px; }
+  .text-\[9px\] { font-size: 9px; }
+  .text-\[10px\] { font-size: 10px; }
+  .text-\[11px\] { font-size: 11px; }
+  .text-xs { font-size: 0.75rem; line-height: 1rem; }
+  .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+  .text-base { font-size: 1rem; line-height: 1.5rem; }
+  .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+  .font-semibold { font-weight: 600; }
+  .font-bold { font-weight: 700; }
+  .font-extrabold { font-weight: 800; }
+  .font-black { font-weight: 900; }
+  .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  .text-center { text-align: center; }
+  .text-left { text-align: left; }
+  .leading-none { line-height: 1; }
+  .leading-tight { line-height: 1.25; }
+  .tracking-wider { letter-spacing: 0.05em; }
+  .pointer-events-none { pointer-events: none; }
+  .pointer-events-auto { pointer-events: auto; }
+  .overflow-hidden { overflow: hidden; }
+  .overflow-x-auto { overflow-x: auto; }
+  .overflow-y-auto { overflow-y: auto; }
+  .object-cover { object-fit: cover; }
+  .list-disc { list-style-type: disc; }
+  .shadow { box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+  .shadow-lg { box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+  @media (min-width: 640px) {
+    .sm\:flex { display: flex !important; }
+    .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sm\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+  @media (min-width: 768px) {
+    .md\:p-4 { padding: 1rem; }
+    .md\:w-56 { width: 14rem; }
+    .md\:w-64 { width: 16rem; }
+    .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .md\:right-24 { right: 6rem; }
+    .md\:right-48 { right: 12rem; }
+  }
+  @media (min-width: 1024px) {
+    .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .lg\:col-span-2 { grid-column: span 2 / span 2; }
+  }
+  @media (max-width: 520px) {
+    .w-56, .w-52 { width: 47vw !important; }
+  }
+
+</style>
+</head>
+<body class="relative w-full h-full select-none overflow-hidden">
+
+<!-- =========================================================================
+     FULLSCREEN FPV VIDEO & WIDE-OPEN CAMERA VIEWPORT
+     ========================================================================= -->
+<div id="fpvStage" class="absolute inset-0 bg-black overflow-hidden">
+  <video id="fpvVideo" autoplay playsinline class="w-full h-full object-cover hidden"></video>
+  <canvas id="hudCanvas" class="w-full h-full block"></canvas>
+
+  <!-- Minimal AI Subtitle Pill at Top-Center of Video -->
+  <div class="pointer-events-none absolute top-12 inset-x-0 flex justify-center px-3 z-10">
+    <div id="aiSubtitleBox" class="max-w-lg px-3.5 py-1 rounded-full bg-black/70 border border-[#fab515]/45 text-[#fab515] text-[11px] md:text-xs font-semibold text-center shadow-lg">
+      🤖 <span id="aiBotLabel">ZIYA</span>: "1x L298N Instant Throttle Ready Boss! Lever uthate hi gadi chalegi."
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================================
+     SLIM TOP BAR: MAIN TELEMETRY + DROPDOWN MENUS FOR CLEAN SCREEN
+     ========================================================================= -->
+<header class="relative z-30 flex flex-wrap items-center justify-between gap-1.5 px-2.5 py-1.5 hud-glass border-b border-[#fab515]/40">
+  <div class="flex items-center gap-1.5">
+    <span class="font-hud font-black text-xs md:text-sm text-[#fab515] tracking-wider flex items-center gap-1">
+      <span class="inline-block w-2 h-2 rounded-full bg-[#fab515] animate-pulse"></span>
+      MARS-X6 <span class="text-[9px] bg-[#fab515] text-black px-1 py-0.2 rounded font-bold">1x L298N</span>
+    </span>
+
+    <div class="flex bg-black/65 rounded-lg p-0.5 border border-white/10 text-[11px] font-bold">
+      <button id="tabRemote" class="px-2 py-0.5 rounded bg-[#fab515] text-black transition">🎮 FPV</button>
+      <button id="tabRover" class="px-2 py-0.5 rounded text-gray-300 hover:text-white transition">📷 Rover</button>
+      <button id="tabGuide" class="px-2 py-0.5 rounded text-gray-300 hover:text-white transition">🔌 1x L298N Guide</button>
+    </div>
+
+    <button id="btnArm" class="px-2.5 py-1 rounded-lg font-hud font-bold text-[11px] bg-emerald-600 text-white shadow hover:bg-emerald-500 transition">
+      ARMED
+    </button>
+    <button id="btnEstop" class="px-2.5 py-1 rounded-lg font-hud font-black text-[11px] bg-red-600 text-white shadow hover:bg-red-500 transition">
+      🛑 STOP
+    </button>
+    <button id="btnVoicePtt" class="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-[#fab515] text-black flex items-center gap-1 shadow hover:brightness-110 transition">
+      <span id="micPulse">🎤</span> <span id="voiceBtnTxt">Voice</span>
+    </button>
+    <button id="btnEars" class="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-cyan-400 text-black shadow hover:brightness-110 transition">🎧 Ziya Live (Rover Mic): OFF</button>
+    <button id="btnBackup" class="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-orange-400 text-black shadow hover:brightness-110 transition">🛟 Ziya Backup: OFF</button>
+    <button id="btnZiya" class="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-pink-400 text-black shadow hover:brightness-110 transition">⚙️ Ziya</button>
+    <button id="btnMyMic" class="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-cyan-400 text-black shadow hover:brightness-110 transition">🎙️ Ziya (My Mic): OFF</button>
+    <button id="btnHorn" class="px-2.5 py-1 rounded-lg font-hud font-bold text-[11px] bg-amber-400 text-black shadow active:scale-95">
+      📯 HORN
+    </button>
+  </div>
+
+  <!-- Right: Clean Dropdown Triggers + Live Voltage & Battery Badge -->
+  <div class="flex flex-wrap items-center gap-1.5">
+    <button id="btnDropPower" class="drop-btn" title="Set Max Motor Voltage (6V/9V/12V), Pump & Servos">
+      ⚡ <span id="topVoltLabel">Max: 12.0V (100%)</span> ▾
+    </button>
+
+    <button id="btnDropLights" class="drop-btn" title="4x Corner LEDs & 5 Stunts">
+      💡 Lights & Kartab ▾
+    </button>
+
+    <button id="btnDropMedia" class="drop-btn" title="Bluetooth Speaker Music, Mic Mute, Recording & HUD Opacity">
+      🎵 DJ, Mic & HUD ▾
+    </button>
+
+    <button id="btnOpenAiModal" class="hud-pill !bg-[#fab515]/20 !border-[#fab515] text-[#fab515] hover:!bg-[#fab515] hover:text-black cursor-pointer">
+      🧠 AI API
+    </button>
+
+    <button id="btnEspConn" class="hud-pill hover:border-[#fab515] cursor-pointer" title="ESP32 Connection Status">
+      <span id="espDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      <span id="espStatusTxt">12.1V</span>
+      <span id="battTxt" class="hidden">12.1V (88%)</span>
+      <span id="capTxt" class="text-[10px] text-[#fab515] font-bold">100%</span>
+    </button>
+
+    <button id="btnFullscreen" class="hud-pill hover:bg-white/10 cursor-pointer" title="Fullscreen Landscape">
+      ⛶
+    </button>
+  </div>
+</header>
+
+<!-- =========================================================================
+     FLOATING DROPDOWN DRAWERS (HIDDEN BY DEFAULT SO CAMERA VIEW IS CLEAN!)
+     ========================================================================= -->
+
+<!-- DROPDOWN 1: MOTOR MAX VOLTAGE (6V / 9V / 12V FULL) + PUMP + SERVOS -->
+<div id="panelDropPower" class="dropdown-panel right-4 md:right-48 hidden space-y-3">
+  <div class="flex items-center justify-between border-b border-white/15 pb-1.5">
+    <span class="font-hud text-xs font-bold text-[#fab515]">⚡ MOTOR VOLTAGE, PUMP & SERVOS</span>
+    <button data-close-drop class="text-xs text-gray-400 hover:text-white px-1.5">✕</button>
+  </div>
+
+  <div class="bg-black/60 p-2.5 rounded-xl border border-[#fab515]/40 space-y-2">
+    <div class="flex items-center justify-between text-xs">
+      <span class="font-bold text-white">🔥 Max Motor Output Voltage:</span>
+      <span id="voltCapReadout" class="font-hud font-black text-[#fab515]">12.0V (100% PWM)</span>
+    </div>
+    <p class="text-[10px] text-gray-300 leading-tight">
+      1x L298N par full throttle dene par motor ko kitna voltage (6V se 12V Full) mile, yahan se chunein:
+    </p>
+    <div class="grid grid-cols-4 gap-1.5">
+      <button data-vpreset="6.0" class="volt-preset py-1.5 rounded-lg text-[11px] font-bold bg-white/10 border border-white/20">6V Safe</button>
+      <button data-vpreset="7.5" class="volt-preset py-1.5 rounded-lg text-[11px] font-bold bg-white/10 border border-white/20">7.5V Med</button>
+      <button data-vpreset="9.0" class="volt-preset py-1.5 rounded-lg text-[11px] font-bold bg-white/10 border border-white/20">9V Fast</button>
+      <button data-vpreset="12.0" class="volt-preset on py-1.5 rounded-lg text-[11px] font-bold bg-white/10 border border-white/20">12V FULL</button>
+    </div>
+    <div class="flex items-center gap-2 text-xs">
+      <span class="text-[10px] text-gray-400">Custom V:</span>
+      <input id="maxVoltageSlider" type="range" min="4.5" max="12.0" step="0.5" value="12.0" class="flex-1 h-1.5">
+    </div>
+  </div>
+
+  <!-- Submersible Pump Control (GPIO 21) -->
+  <div class="bg-black/50 p-2.5 rounded-xl border border-white/10 flex items-center justify-between gap-2">
+    <button id="btnPumpToggle" class="px-3 py-1.5 rounded-lg font-hud font-bold text-xs bg-cyan-500/20 border border-cyan-400 text-cyan-300 hover:bg-cyan-400 hover:text-black transition">
+      💧 PUMP: OFF
+    </button>
+    <div class="flex items-center gap-1.5 flex-1">
+      <span class="text-[10px] text-gray-300">Flow</span>
+      <input id="pumpSpeedSlider" type="range" min="20" max="100" value="85" class="flex-1 h-1.5">
+      <span id="pumpSpeedVal" class="text-xs font-bold text-cyan-300">85%</span>
+    </div>
+  </div>
+
+  <!-- Dual Servos: Camera Pan (GPIO 19) & Cargo/Sprayer Arm (GPIO 18) -->
+  <div class="bg-black/50 p-2.5 rounded-xl border border-white/10 space-y-2">
+    <div class="flex items-center justify-between text-xs">
+      <span class="text-gray-200 font-semibold">📹 Cam Pan (GPIO19): <b id="camAngleVal" class="text-[#fab515]">90°</b></span>
+      <button id="btnCamCenter" class="text-[10px] px-2 py-0.5 rounded bg-white/10 hover:bg-[#fab515] hover:text-black">Center 90°</button>
+    </div>
+    <input id="camServoSlider" type="range" min="20" max="160" value="90" class="w-full h-1.5">
+
+    <div class="flex items-center justify-between text-xs pt-1 border-t border-white/10">
+      <span class="text-gray-200 font-semibold">📦 Cargo/Arm (GPIO18): <b id="cargoAngleVal" class="text-[#fab515]">10°</b></span>
+      <div class="flex gap-1">
+        <button id="btnCargoOpen" class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Open</button>
+        <button id="btnCargoClose" class="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40">Close</button>
+      </div>
+    </div>
+    <input id="cargoServoSlider" type="range" min="0" max="180" value="10" class="w-full h-1.5">
+  </div>
+</div>
+
+<!-- DROPDOWN 2: 4x LED MATRIX & 5 KARTAB (STUNT) MODES -->
+<div id="panelDropLights" class="dropdown-panel right-4 md:right-24 hidden space-y-3">
+  <div class="flex items-center justify-between border-b border-white/15 pb-1.5">
+    <span class="font-hud text-xs font-bold text-[#fab515]">💡 4x LEDS & KARTAB STUNTS</span>
+    <button data-close-drop class="text-xs text-gray-400 hover:text-white px-1.5">✕</button>
+  </div>
+
+  <div>
+    <div class="text-[11px] text-gray-300 font-semibold mb-1.5">💡 4 Corner LEDs & Strobe Effects (GPIO 4, 13, 22, 23):</div>
+    <div class="grid grid-cols-4 gap-1.5">
+      <button data-led="fl" class="led-btn py-1.5 rounded-lg text-xs font-bold bg-white/10 border border-white/20">FL</button>
+      <button data-led="fr" class="led-btn py-1.5 rounded-lg text-xs font-bold bg-white/10 border border-white/20">FR</button>
+      <button data-led="rl" class="led-btn py-1.5 rounded-lg text-xs font-bold bg-white/10 border border-white/20">RL</button>
+      <button data-led="rr" class="led-btn py-1.5 rounded-lg text-xs font-bold bg-white/10 border border-white/20">RR</button>
+      <button data-led="all" class="led-btn py-1.5 rounded-lg text-xs font-bold bg-white/10 border border-white/20">ALL</button>
+      <button data-led="hazard" class="led-btn py-1.5 rounded-lg text-xs font-bold bg-amber-500/20 border border-amber-400/40 text-amber-300">⚠️ HAZ</button>
+      <button data-led="police" class="led-btn py-1.5 rounded-lg text-xs font-bold bg-blue-500/20 border border-blue-400/40 text-blue-300">🚨 POL</button>
+      <button data-led="disco" class="led-btn py-1.5 rounded-lg text-xs font-bold bg-pink-500/20 border border-pink-400/40 text-pink-300">✨ DISCO</button>
+    </div>
+  </div>
+
+  <div class="pt-2 border-t border-white/10">
+    <div class="text-[11px] text-gray-300 font-semibold mb-1.5">⚡ 1x L298N Kartab (Autonomous Stunts):</div>
+    <div class="grid grid-cols-2 gap-1.5">
+      <button data-stunt="tornado" class="stunt-chip">🌪️ Tornado 360</button>
+      <button data-stunt="snake" class="stunt-chip">🐍 Naagin Slalom</button>
+      <button data-stunt="burnout" class="stunt-chip">🔥 Spin Launch</button>
+      <button data-stunt="shake" class="stunt-chip">🪨 Sand Shake</button>
+      <button data-stunt="spray_patrol" class="stunt-chip col-span-2">🚜 Kisan Agro Spray Patrol</button>
+    </div>
+  </div>
+</div>
+
+<!-- DROPDOWN 3: BLUETOOTH SPEAKER MUSIC DJ, LIVE MIC MUTE, FPV REC & HUD OPACITY -->
+<div id="panelDropMedia" class="dropdown-panel right-2 hidden space-y-3">
+  <div class="flex items-center justify-between border-b border-white/15 pb-1.5">
+    <span class="font-hud text-xs font-bold text-[#fab515]">🎵 MUSIC DJ, MIC & HUD VIEW</span>
+    <button data-close-drop class="text-xs text-gray-400 hover:text-white px-1.5">✕</button>
+  </div>
+
+  <div class="bg-black/50 p-2.5 rounded-xl border border-white/10 space-y-2">
+    <div class="text-[11px] font-semibold text-gray-300">🔊 Play Song / Beats on Rover Bluetooth Speaker:</div>
+    <div class="grid grid-cols-2 gap-2">
+      <button id="btnMusicToggle" class="py-2 rounded-lg font-bold text-xs bg-purple-500/25 border border-purple-400/50 text-purple-200 hover:bg-purple-500 hover:text-white">
+        🎵 DJ Beats
+      </button>
+      <label class="py-2 rounded-lg font-bold text-xs bg-cyan-500/25 border border-cyan-400/50 text-cyan-200 hover:bg-cyan-400 hover:text-black text-center cursor-pointer">
+        📂 Pick MP3 Song
+        <input id="songFileInput" type="file" accept="audio/*" class="hidden">
+      </label>
+    </div>
+  </div>
+
+  <div class="bg-black/50 p-2.5 rounded-xl border border-white/10 grid grid-cols-2 gap-2">
+    <button id="btnLiveMicMute" class="py-2 rounded-lg font-bold text-xs bg-white/10 border border-white/20 flex items-center justify-center gap-1">
+      <span id="roverMicIcon">🎙️</span>
+      <span id="roverMicTxt">Rover Mic: ON</span>
+    </button>
+    <button id="btnRecFpv" class="py-2 rounded-lg font-bold text-xs bg-red-500/20 border border-red-400/40 text-red-200 flex items-center justify-center gap-1.5">
+      <span id="recDot" class="w-2 h-2 rounded-full bg-red-500"></span>
+      <span id="recTxt">REC FPV</span>
+    </button>
+  </div>
+
+  <div class="bg-black/50 p-2.5 rounded-xl border border-white/10 space-y-2">
+    <div class="flex items-center justify-between">
+      <span class="text-[11px] text-gray-300 font-semibold">🗣️ AI Voice & Text Command:</span>
+      <button id="btnAutoListen" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 border border-white/20 text-gray-200">
+        👂 Auto-Mic: OFF
+      </button>
+    </div>
+    <div class="flex gap-1.5">
+      <input id="aiTextInput" type="text" placeholder="Type command (e.g. 'Turn left', '9V set karo')..." class="flex-1 bg-black/70 border border-white/20 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#fab515]">
+      <button id="btnSendAiText" class="px-3 py-1.5 rounded-lg bg-[#fab515] text-black text-xs font-bold">
+        Send
+      </button>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between bg-black/50 px-3 py-2 rounded-xl border border-white/10 text-xs">
+    <span class="text-gray-300">HUD Opacity:</span>
+    <input id="hudOpacitySlider" type="range" min="20" max="100" value="78" class="w-32 h-1.5 cursor-pointer">
+    <span id="hudOpacityVal" class="text-[#fab515] font-bold">78%</span>
+  </div>
+</div>
+
+<!-- =========================================================================
+     VIEW 1: CLEAN LANDSCAPE FPV COCKPIT (ONLY ESSENTIAL DRIVE CONTROLS AT EDGES!)
+     ========================================================================= -->
+<main id="viewRemote" class="relative z-10 w-full h-[calc(100%-42px)] flex flex-col justify-end p-2.5 md:p-4 pointer-events-none">
+
+  <div class="flex items-end justify-between w-full pointer-events-none">
+
+    <!-- BOTTOM-LEFT CORNER: STYLISH ARROW STEERING + 360° ROTATE CW/CCW -->
+    <div class="hud-glass p-2.5 rounded-2xl w-56 md:w-64 flex flex-col gap-2 pointer-events-auto">
+      <div class="flex items-center justify-between px-1">
+        <span class="font-hud text-[10px] text-[#fab515] font-bold">STEER & 360° SPIN</span>
+        <span id="steerModeBadge" class="text-[9px] text-cyan-300 font-mono">1x L298N CH-A/B</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btnSteerLeft" class="steer-btn py-3.5 flex flex-col items-center justify-center gap-0.5">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z M9.41 16.59L4.83 12l4.58-4.59L8 6l-6 6 6 6 1.41-1.41z"/>
+          </svg>
+          <span class="font-hud text-[11px] font-extrabold">LEFT</span>
+        </button>
+
+        <button id="btnSteerRight" class="steer-btn py-3.5 flex flex-col items-center justify-center gap-0.5">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z M14.59 16.59L19.17 12l-4.58-4.59L16 6l6 6-6 6-1.41-1.41z"/>
+          </svg>
+          <span class="font-hud text-[11px] font-extrabold">RIGHT</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btnSpinCCW" class="spin-btn py-2 px-1.5 flex items-center justify-center gap-1 font-hud text-[11px] font-bold">
+          <span>↺</span> CCW 360°
+        </button>
+        <button id="btnSpinCW" class="spin-btn py-2 px-1.5 flex items-center justify-center gap-1 font-hud text-[11px] font-bold">
+          CW 360° <span>↻</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- BOTTOM-CENTER: COMPACT BRAKE & QUICK VOLTAGE PILL -->
+    <div class="hidden sm:flex items-center gap-2 hud-glass px-3 py-1.5 rounded-full pointer-events-auto mb-1">
+      <button id="btnBrake" class="px-3 py-1 rounded-full font-hud font-bold text-xs bg-amber-500/20 border border-amber-400/60 text-amber-300 hover:bg-amber-400 hover:text-black transition">
+        ⚓ BRAKE
+      </button>
+      <span id="liveVoltFootBadge" class="text-[11px] font-mono text-gray-300">Max: <b class="text-[#fab515]">12.0V</b></span>
+    </div>
+
+    <!-- BOTTOM-RIGHT CORNER: F / N / R GEAR SHIFTER + VERTICAL ANALOG THROTTLE LEVER -->
+    <div class="hud-glass p-2.5 rounded-2xl w-52 md:w-56 flex flex-col gap-2 pointer-events-auto">
+      <div class="flex items-center justify-between px-1">
+        <span class="font-hud text-[10px] text-[#fab515] font-bold">GEAR & LEVER</span>
+        <button id="btnLeverHoldMode" class="text-[9px] px-1.5 py-0.5 rounded bg-[#fab515]/20 border border-[#fab515]/50 text-[#fab515] font-semibold">
+          Spring: ON
+        </button>
+      </div>
+
+      <div class="flex items-center justify-around gap-2">
+        <div class="flex flex-col gap-1.5 w-20">
+          <button id="btnGearF" class="gear-btn active-f py-2.5 text-center flex flex-col items-center">
+            <span class="text-base leading-none">F</span>
+            <span class="text-[8px] font-sans font-semibold opacity-90">FORWARD</span>
+          </button>
+          <button id="btnGearN" class="gear-btn py-2 text-center flex flex-col items-center">
+            <span class="text-sm leading-none">N</span>
+            <span class="text-[8px] font-sans font-semibold opacity-90">NEUTRAL</span>
+          </button>
+          <button id="btnGearR" class="gear-btn py-2.5 text-center flex flex-col items-center">
+            <span class="text-base leading-none">R</span>
+            <span class="text-[8px] font-sans font-semibold opacity-90">REVERSE</span>
+          </button>
+
+          <div class="bg-black/55 rounded-lg p-1 text-center border border-white/10">
+            <div id="speedReadout" class="font-hud text-sm font-black text-[#fab515]">0%</div>
+            <div id="effVoltReadout" class="text-[9px] text-emerald-400 font-mono">0.0V Out</div>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-center gap-0.5">
+          <span class="text-[8px] font-hud text-emerald-400">FULL</span>
+          <div id="leverTrack">
+            <div id="leverFill"></div>
+            <div class="absolute inset-x-2 top-1/4 border-t border-white/15 pointer-events-none"></div>
+            <div class="absolute inset-x-2 top-2/4 border-t border-white/25 pointer-events-none"></div>
+            <div class="absolute inset-x-2 top-3/4 border-t border-white/15 pointer-events-none"></div>
+            <div id="leverKnob">0%</div>
+          </div>
+          <span class="text-[8px] font-hud text-gray-400">0%</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- =========================================================================
+     VIEW 2: ROVER CAMERA, MIC, AI & BLUETOOTH SPEAKER NODE
+     ========================================================================= -->
+<section id="viewRover" class="relative z-10 hidden w-full h-[calc(100%-42px)] p-3 overflow-y-auto custom-scroll">
+  <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-3">
+    <div class="hud-glass p-4 rounded-2xl lg:col-span-2 flex flex-col gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2">
+        <div>
+          <h2 class="font-hud text-base font-bold text-[#fab515]">📷 ROVER MOUNTED PHONE NODE (LANDSCAPE)</h2>
+          <p class="text-xs text-gray-300">Mount this phone on MARS-X6 in Landscape. Pairs with your Bluetooth Speaker for Horn, AI Voice & Songs!</p>
+        </div>
+        <span id="roverNodeBadge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-400/40">
+          STANDBY
+        </span>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <button id="btnStartRoverCam" class="col-span-2 py-3 rounded-xl font-hud font-bold text-xs bg-[#fab515] text-black shadow-lg hover:brightness-110">
+          🚀 START CAMERA + LIVE MIC + AI
+        </button>
+        <button id="btnSwitchCam" class="py-3 rounded-xl font-bold text-xs bg-white/10 border border-white/20 hover:border-[#fab515]">
+          🔄 Flip Front/Rear Cam
+        </button>
+        <button id="btnRoverTestSpeaker" class="py-3 rounded-xl font-bold text-xs bg-cyan-500/20 border border-cyan-400/50 text-cyan-200 hover:bg-cyan-400 hover:text-black">
+          🔊 Test BT Speaker
+        </button>
+      </div>
+
+      <div class="bg-black/50 p-3 rounded-xl border border-white/10 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <div class="text-xs font-bold text-[#fab515] mb-1">🔗 Mode A: Offline Zero-Termux ESP32 WebRTC Link</div>
+          <p class="text-[11px] text-gray-300 mb-2">When Rover Phone & Remote Phone are on the same Wi-Fi/Hotspot, ESP32 (`http://192.168.4.1/signal`) connects video & audio P2P!</p>
+          <button id="btnEspWebRtcSync" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs font-bold hover:bg-emerald-500 hover:text-black">
+            ⚡ Broadcast Offer via ESP32
+          </button>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-cyan-300 mb-1">☁️ Mode B: Online Internet Room Code (PeerJS)</div>
+          <div class="flex items-center gap-1.5">
+            <input id="peerRoomIdInput" type="text" value="MARS-X6-SHIVANSHU" class="flex-1 bg-black/70 border border-white/20 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white">
+            <button id="btnStartPeerHost" class="px-3 py-1.5 rounded-lg bg-cyan-400 text-black font-bold text-xs">
+              Host Room
+            </button>
+          </div>
+          <p id="peerStatusTxt" class="text-[11px] text-gray-400 mt-1">Enter same Room Code on Remote Phone to stream video + mic + songs anywhere!</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud-glass p-4 rounded-2xl flex flex-col justify-between gap-3">
+      <div>
+        <h3 class="font-hud text-sm font-bold text-[#fab515] border-b border-white/10 pb-1.5">🔊 BT SPEAKER & ROVER MIC AI</h3>
+        <ul class="text-xs text-gray-300 space-y-1 mt-2 list-disc pl-4">
+          <li><b>AI Voice Replies:</b> "<span class="text-[#fab515]">Ok Boss, turning left!</span>"</li>
+          <li><b>Rover Horn:</b> Dual-tone cyber horn synthesizer</li>
+          <li><b>Remote DJ Songs:</b> Streams MP3/Beats from Remote Phone</li>
+          <li><b>Rover Mic Commands:</b> Speak directly near the rover!</li>
+        </ul>
+      </div>
+
+      <div id="roverEventLog" class="bg-black/70 border border-white/10 rounded-xl p-2.5 h-36 overflow-y-auto font-mono text-[11px] text-emerald-300 space-y-1">
+        <div>[SYSTEM] MARS-X6 V2.1 (1x L298N Instant Throttle) Ready.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================================
+     VIEW 3: COMPLETE 1x L298N WIRING DIAGRAM & STEP-BY-STEP GUIDE
+     ========================================================================= -->
+<section id="viewGuide" class="relative z-10 hidden w-full h-[calc(100%-42px)] p-3 overflow-y-auto custom-scroll bg-[#121214]/95">
+  <div class="max-w-6xl mx-auto space-y-4 pb-8">
+    <div class="hud-glass p-4 rounded-2xl border border-[#fab515]/50">
+      <h2 class="font-hud text-lg font-black text-[#fab515]">⚡ MARS-X6 V2.1 • SINGLE (1x) L298N + 6 MOTORS + INSTANT THROTTLE WIRING GUIDE</h2>
+      <p class="text-xs text-gray-300 mt-1">
+        Ye system aapke <b>1x L298N module</b> ke liye khaas banaya gaya hai! ESP32 boot hote hi <b>Auto-Armed</b> rehta hai aur 120ms continuous drive loop se lever uthate hi gadi turant chalti hai.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="hud-glass p-4 rounded-2xl">
+        <h3 class="font-hud text-sm font-bold text-[#fab515] mb-2">1. Single (1x) L298N Motor Driver Pinout (6 Motors)</h3>
+        <p class="text-xs text-gray-300 mb-2">
+          Left side ki 3 motors (LF, LM, LR) ko parallel me jodkar <b>OUT1 & OUT2</b> me lagayein, aur Right side ki 3 motors (RF, RM, RR) ko parallel me jodkar <b>OUT3 & OUT4</b> me lagayein. ENA aur ENB ke black jumpers hata kar ESP32 pins lagayein:
+        </p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b border-white/20 text-[#fab515]">
+                <th class="py-1.5 px-2">1x L298N Channel</th>
+                <th class="py-1.5 px-2">L298N Pin</th>
+                <th class="py-1.5 px-2">ESP32 GPIO</th>
+                <th class="py-1.5 px-2">Motor Screw Terminal</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/10 font-mono text-[11px]">
+              <tr><td class="py-1 px-2">Channel A (Left Speed)</td><td>ENA</td><td class="text-emerald-400 font-bold">D25</td><td>OUT1 & OUT2 (Left 3 Motors)</td></tr>
+              <tr><td class="py-1 px-2">Channel A (Left Dir)</td><td>IN1 / IN2</td><td class="text-emerald-400 font-bold">D26 / D27 (or RX2/TX2)</td><td>OUT1 (Red +), OUT2 (Black -)</td></tr>
+              <tr><td class="py-1 px-2">Channel B (Right Dir)</td><td>IN3 / IN4</td><td class="text-cyan-400 font-bold">D32 / D33</td><td>OUT3 (Red +), OUT4 (Black -)</td></tr>
+              <tr><td class="py-1 px-2">Channel B (Right Speed)</td><td>ENB</td><td class="text-cyan-400 font-bold">D14</td><td>OUT3 & OUT4 (Right 3 Motors)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="hud-glass p-4 rounded-2xl">
+        <h3 class="font-hud text-sm font-bold text-[#fab515] mb-2">2. Servos, 4x LEDs & Submersible Pump Pinout</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b border-white/20 text-[#fab515]">
+                <th class="py-1.5 px-2">Component</th>
+                <th class="py-1.5 px-2">ESP32 GPIO</th>
+                <th class="py-1.5 px-2">Wiring Note</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/10 font-mono text-[11px]">
+              <tr><td class="py-1 px-2">Servo 1 (Cargo / Spray Arm)</td><td class="text-[#fab515] font-bold">D18</td><td>Signal on 18, 5V Buck Converter</td></tr>
+              <tr><td class="py-1 px-2">Servo 2 (Camera Pan Mount)</td><td class="text-[#fab515] font-bold">D19</td><td>Signal on 19, 5V Buck Converter</td></tr>
+              <tr><td class="py-1 px-2">4x Corner LEDs (FL, FR, RL, RR)</td><td class="text-emerald-400 font-bold">D4, D13, D22, D23</td><td>220Ω resistor in series (+ Common GND)</td></tr>
+              <tr><td class="py-1 px-2">Submersible Water Pump</td><td class="text-cyan-400 font-bold">D21</td><td>IRLZ44N / IRLB8721 / D4184 MOSFET</td></tr>
+              <tr><td class="py-1 px-2">3S Battery Monitor</td><td class="text-purple-300 font-bold">D34</td><td>100kΩ / 27kΩ Voltage Divider</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================================
+     MODAL: AI API KEY, ROBOT NAME & ESP32 CONNECTION CONFIG
+     ========================================================================= -->
+<div id="configModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-3">
+  <div class="hud-glass w-full max-w-lg rounded-2xl p-4 border border-[#fab515] space-y-3 max-h-[92vh] overflow-y-auto custom-scroll">
+    <div class="flex items-center justify-between border-b border-white/15 pb-2">
+      <h3 class="font-hud text-sm md:text-base font-black text-[#fab515]">🧠 AI BRAIN, VOICE & ESP32 SETTINGS</h3>
+      <button id="btnCloseModal" class="px-2.5 py-1 rounded-lg bg-white/10 text-xs font-bold hover:bg-red-500">✕ Close</button>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+      <div>
+        <label class="block text-gray-300 font-semibold mb-1">🤖 Robot Custom Name</label>
+        <input id="cfgBotName" type="text" value="ZIYA" class="w-full bg-black/70 border border-white/25 rounded-lg px-3 py-2 text-white font-bold focus:border-[#fab515] focus:outline-none">
+      </div>
+
+      <div>
+        <label class="block text-gray-300 font-semibold mb-1">🗣️ AI Voice Reply Language</label>
+        <select id="cfgVoiceLang" class="w-full bg-black/70 border border-white/25 rounded-lg px-3 py-2 text-white focus:border-[#fab515] focus:outline-none">
+          <option value="en-IN">English + Hinglish ("Ok Boss, turning left!")</option>
+          <option value="hi-IN">Hindi + Hinglish ("Ji Boss, baye mud raha hoon!")</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-gray-300 font-semibold mb-1">☁️ AI Provider</label>
+        <select id="cfgAiProvider" class="w-full bg-black/70 border border-white/25 rounded-lg px-3 py-2 text-white focus:border-[#fab515] focus:outline-none">
+          <option value="gemini">Google Gemini API (gemini-2.5-flash)</option>
+          <option value="openai">OpenAI / Groq Compatible API</option>
+          <option value="offline">Offline Built-In Rover Brain (No Internet)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-gray-300 font-semibold mb-1">🔑 AI API Key (Change Anytime in UI)</label>
+        <input id="cfgApiKey" type="password" placeholder="Paste Gemini or OpenAI API Key..." class="w-full bg-black/70 border border-white/25 rounded-lg px-3 py-2 text-white font-mono focus:border-[#fab515] focus:outline-none">
+      </div>
+
+      <div>
+        <label class="block text-gray-300 font-semibold mb-1">📡 ESP32 Rover IP / Host URL</label>
+        <input id="cfgEspUrl" type="text" value="http://192.168.4.1" class="w-full bg-black/70 border border-white/25 rounded-lg px-3 py-2 text-white font-mono focus:border-[#fab515] focus:outline-none">
+      </div>
+
+      <div>
+        <label class="block text-gray-300 font-semibold mb-1">🔐 ESP32 Pairing Key (Optional)</label>
+        <input id="cfgPairingKey" type="text" value="mars1234" class="w-full bg-black/70 border border-white/25 rounded-lg px-3 py-2 text-white font-mono focus:border-[#fab515] focus:outline-none">
+      </div>
+    </div>
+
+        <div class="bg-black/60 p-2.5 rounded-xl border border-[#fab515]/40 space-y-2 text-xs">
+      <div class="font-bold text-[#fab515]">📶 Connect ESP32 to Phone Hotspot (For Online AI + HD 30fps Video!)</div>
+      <div class="text-[11px] text-gray-300">Apne Phone ka Hotspot Name aur Password yahan save karein—ESP32 bina code badle aapke Hotspot se jud jayega (aur 192.168.4.1 bhi chalu rahega):</div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <input id="cfgHotspotSsid" type="text" placeholder="Hotspot Name (SSID)" class="bg-black/70 border border-white/25 rounded-lg px-2.5 py-1.5 text-white">
+        <input id="cfgHotspotPass" type="text" placeholder="Hotspot Password" class="bg-black/70 border border-white/25 rounded-lg px-2.5 py-1.5 text-white">
+        <button id="btnSaveHotspot" class="px-3 py-1.5 rounded-lg bg-[#fab515] text-black font-bold">Save Hotspot to ESP32</button>
+      </div>
+      <div id="hotspotIpStatus" class="text-[11px] text-emerald-400 font-mono">ESP32 AP IP: 192.168.4.1 (mDNS: http://mars-x6.local)</div>
+    </div>
+    <div class="flex items-center justify-between bg-black/50 p-2.5 rounded-xl border border-white/10 text-xs">
+      <div>
+        <div class="font-bold text-[#fab515]">🔗 Connect Remote Phone to Rover Room (WebRTC Video/Mic)</div>
+        <div class="text-[11px] text-gray-400">Matches the Room ID on Rover Phone for live FPV camera + mic + song streaming</div>
+      </div>
+      <button id="btnJoinPeerRoom" class="px-3 py-1.5 rounded-lg bg-cyan-400 text-black font-bold">Connect Video</button>
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2 border-t border-white/15">
+      <button id="btnTestAiVoice" class="px-3 py-2 rounded-xl bg-white/10 text-xs font-bold hover:bg-white/20">🔊 Test AI Voice</button>
+      <button id="btnSaveConfig" class="px-4 py-2 rounded-xl bg-[#fab515] text-black font-hud font-bold text-xs shadow-lg hover:brightness-110">💾 SAVE & SYNC</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  function loadStore(key, fallback) {
+    try {
+      const v = localStorage.getItem(key);
+      return v !== null ? v : fallback;
+    } catch (e) { return fallback; }
+  }
+  function saveStore(key, val) {
+    try { localStorage.setItem(key, val); } catch (e) {}
+  }
+
+  // Detect if running directly on ESP32 (http://192.168.4.1) vs Canvas preview
+  const isOnEsp = (location.protocol === 'http:' || location.hostname === '192.168.4.1');
+
+  const state = {
+    botName: loadStore('mars_bot_name', 'ZIYA'),
+    voiceLang: loadStore('mars_voice_lang', 'en-IN'),
+    aiProvider: loadStore('mars_ai_provider', 'gemini'),
+    apiKey: loadStore('mars_api_key', ''),
+    espUrl: loadStore('mars_esp_url', 'http://192.168.4.1'),
+    pairingKey: loadStore('mars_pair_key', 'mars1234'),
+    roomId: loadStore('mars_room_id', 'MARS-X6-SHIVANSHU'),
+    maxMotorV: parseFloat(loadStore('mars_max_v', '12.0')) || 12.0,
+    espLiveEnabled: isOnEsp,
+    armed: true,
+    estop: false,
+    gear: 'F',
+    leverPct: 0,
+    springReturn: true,
+    steerDir: 0,
+    spinDir: 0,
+    motorLF: 0,
+    motorLR: 0,
+    motorRF: 0,
+    motorRR: 0,
+    camAngle: 90,
+    cargoAngle: 10,
+    leds: { fl: false, fr: false, rl: false, rr: false },
+    ledMode: 'normal',
+    pumpOn: false,
+    pumpSpeed: 85,
+    stunt: 'none',
+    battV: 12.1,
+    battPct: 88,
+    capPct: 100,
+    roverMicMuted: false,
+    recording: false,
+    djPlaying: false,
+    autoListen: false
+  };
+
+  const $ = id => document.getElementById(id);
+
+  if ($('aiBotLabel')) $('aiBotLabel').textContent = state.botName;
+  $('cfgBotName').value = state.botName;
+  $('cfgVoiceLang').value = state.voiceLang;
+  $('cfgAiProvider').value = state.aiProvider;
+  $('cfgApiKey').value = state.apiKey;
+  $('cfgEspUrl').value = state.espUrl;
+  $('cfgPairingKey').value = state.pairingKey;
+  $('peerRoomIdInput').value = state.roomId;
+
+  function logRover(msg) {
+    const box = $('roverEventLog');
+    if (!box) return;
+    const div = document.createElement('div');
+    div.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+    box.prepend(div);
+  }
+
+  function showSubtitle(text) {
+    if ($('aiBotLabel')) $('aiBotLabel').textContent = state.botName;
+    $('aiSubtitleBox').innerHTML = '🤖 <b>' + state.botName + '</b>: "' + text + '"';
+  }
+
+  // =========================================================================
+  // DROPDOWN MENU CONTROLLER
+  // =========================================================================
+  const dropdownMap = [
+    { btn: 'btnDropPower', panel: 'panelDropPower' },
+    { btn: 'btnDropLights', panel: 'panelDropLights' },
+    { btn: 'btnDropMedia', panel: 'panelDropMedia' }
+  ];
+
+  function toggleDropdown(targetPanelId) {
+    dropdownMap.forEach(d => {
+      const p = $(d.panel);
+      const b = $(d.btn);
+      if (d.panel === targetPanelId) {
+        const willOpen = p.classList.contains('hidden');
+        p.classList.toggle('hidden', !willOpen);
+        b.classList.toggle('open', willOpen);
+      } else {
+        p.classList.add('hidden');
+        b.classList.remove('open');
+      }
+    });
+  }
+
+  dropdownMap.forEach(d => {
+    $(d.btn).addEventListener('click', e => {
+      e.stopPropagation();
+      toggleDropdown(d.panel);
+    });
+  });
+
+  document.querySelectorAll('[data-close-drop]').forEach(btn => {
+    btn.addEventListener('click', () => toggleDropdown(null));
+  });
+
+  $('fpvStage').addEventListener('pointerdown', () => toggleDropdown(null));
+
+  // =========================================================================
+  // USER-CONFIGURABLE MAX MOTOR VOLTAGE (6V / 7.5V / 9V / 12V FULL)
+  // =========================================================================
+  function applyMaxMotorVoltage(v, announce) {
+    state.maxMotorV = Math.max(4.5, Math.min(12.0, parseFloat(v) || 12.0));
+    state.capPct = Math.min(100, Math.max(35, Math.round((state.maxMotorV / 12.0) * 100)));
+    saveStore('mars_max_v', String(state.maxMotorV));
+
+    $('maxVoltageSlider').value = state.maxMotorV;
+    $('voltCapReadout').textContent = state.maxMotorV.toFixed(1) + 'V (' + state.capPct + '% PWM)';
+    $('topVoltLabel').textContent = 'Max: ' + state.maxMotorV.toFixed(1) + 'V (' + state.capPct + '%)';
+    $('capTxt').textContent = state.capPct + '%';
+    $('liveVoltFootBadge').innerHTML = 'Max: <b class="text-[#fab515]">' + state.maxMotorV.toFixed(1) + 'V</b>';
+
+    document.querySelectorAll('[data-vpreset]').forEach(btn => {
+      btn.classList.toggle('on', Math.abs(parseFloat(btn.dataset.vpreset) - state.maxMotorV) < 0.2);
+    });
+
+    computeWheelTorque();
+    sendEspCommand({ cmd: 'voltage_cap', max_v: state.maxMotorV, cap_pct: state.capPct });
+    if (announce) {
+      speakReply('Ok Boss, maximum motor voltage set to ' + state.maxMotorV.toFixed(1) + ' volts (' + state.capPct + ' percent power)!');
+    }
+  }
+
+  document.querySelectorAll('[data-vpreset]').forEach(btn => {
+    btn.addEventListener('click', () => applyMaxMotorVoltage(parseFloat(btn.dataset.vpreset), true));
+  });
+  $('maxVoltageSlider').addEventListener('input', e => applyMaxMotorVoltage(parseFloat(e.target.value), false));
+  $('maxVoltageSlider').addEventListener('change', e => applyMaxMotorVoltage(parseFloat(e.target.value), true));
+
+  // =========================================================================
+  // BLUETOOTH SPEAKER SYNTHESIZER (HORN + DJ BEATS + TTS VOICE)
+  // =========================================================================
+  let audioCtx = null;
+  let hornOsc1 = null, hornOsc2 = null, hornGain = null;
+  let djTimer = null;
+  let audioDestNode = null;
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) {
+        audioCtx = new AC();
+        if (audioCtx.createMediaStreamDestination) {
+          audioDestNode = audioCtx.createMediaStreamDestination();
+        }
+      }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+    return audioCtx;
+  }
+
+  var muteUntil = 0;
+  function speakReply(text) {
+    showSubtitle(text);
+    logRover(state.botName + ' says: ' + text);
+    sendPeerData({ type: 'tts', text, botName: state.botName, lang: state.voiceLang });
+    let viaRover = false;
+    try { viaRover = !!(dataConn && dataConn.open && !localStream); } catch (e) {}
+    muteUntil = Date.now() + 2500 + String(text).length * 90;
+    try {
+      if (!viaRover && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = /[\u0900-\u097F]/.test(text) ? 'hi-IN' : (state.voiceLang || 'en-IN');
+        u.onstart = () => { sendPeerData({ type: 'speaking', on: true }); };
+        u.onend = u.onerror = () => { muteUntil = Date.now() + 600; sendPeerData({ type: 'speaking', on: false }); };
+        u.rate = 1.04;
+        u.pitch = 0.96;
+        window.speechSynthesis.speak(u);
+      }
+    } catch (e) {}
+  }
+
+  function startHornSound() {
+    const ac = ensureAudio();
+    if (!ac || hornOsc1) return;
+    try {
+      hornOsc1 = ac.createOscillator();
+      hornOsc2 = ac.createOscillator();
+      hornGain = ac.createGain();
+      hornOsc1.type = 'sawtooth';
+      hornOsc2.type = 'square';
+      hornOsc1.frequency.value = 415;
+      hornOsc2.frequency.value = 518;
+      hornGain.gain.value = 0.35;
+      hornOsc1.connect(hornGain);
+      hornOsc2.connect(hornGain);
+      hornGain.connect(ac.destination);
+      if (audioDestNode) hornGain.connect(audioDestNode);
+      hornOsc1.start();
+      hornOsc2.start();
+    } catch (e) {}
+  }
+
+  function stopHornSound() {
+    try {
+      if (hornOsc1) { hornOsc1.stop(); hornOsc1.disconnect(); hornOsc1 = null; }
+      if (hornOsc2) { hornOsc2.stop(); hornOsc2.disconnect(); hornOsc2 = null; }
+      if (hornGain) { hornGain.disconnect(); hornGain = null; }
+    } catch (e) {}
+  }
+
+  function toggleDjBeats() {
+    const ac = ensureAudio();
+    if (state.djPlaying) {
+      state.djPlaying = false;
+      clearInterval(djTimer);
+      $('btnMusicToggle').classList.remove('!bg-purple-500', '!text-white');
+      $('btnMusicToggle').textContent = '🎵 DJ Beats';
+      speakReply('Ok Boss, music stopped.');
+      return;
+    }
+    state.djPlaying = true;
+    $('btnMusicToggle').classList.add('!bg-purple-500', '!text-white');
+    $('btnMusicToggle').textContent = '⏹️ Stop DJ';
+    speakReply('Playing Rover Cyber Bass on Bluetooth Speaker!');
+    let step = 0;
+    const notes = [110, 110, 146.8, 110, 164.8, 146.8, 130.8, 98];
+    djTimer = setInterval(() => {
+      if (!state.djPlaying || !ac) return;
+      try {
+        const osc = ac.createOscillator();
+        const g = ac.createGain();
+        osc.type = (step % 2 === 0) ? 'sawtooth' : 'triangle';
+        osc.frequency.setValueAtTime(notes[step % notes.length], ac.currentTime);
+        g.gain.setValueAtTime(0.28, ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.008, ac.currentTime + 0.22);
+        osc.connect(g);
+        g.connect(ac.destination);
+        if (audioDestNode) g.connect(audioDestNode);
+        osc.start();
+        osc.stop(ac.currentTime + 0.23);
+        step++;
+      } catch (e) {}
+    }, 250);
+  }
+
+  let songAudioEl = null;
+  $('songFileInput').addEventListener('change', e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const ac = ensureAudio();
+    if (songAudioEl) { songAudioEl.pause(); }
+    songAudioEl = new Audio(URL.createObjectURL(file));
+    songAudioEl.crossOrigin = 'anonymous';
+    try {
+      const src = ac.createMediaElementSource(songAudioEl);
+      src.connect(ac.destination);
+      if (audioDestNode) src.connect(audioDestNode);
+    } catch (err) {}
+    songAudioEl.play().catch(() => {});
+    speakReply('Ok Boss, playing song ' + file.name.slice(0, 22) + ' on speaker!');
+  });
+
+  // =========================================================================
+  // INSTANT ZERO-PREFLIGHT ESP32 COMMAND & CONTINUOUS THROTTLE ENGINE
+  // =========================================================================
+  let seqNum = 1;
+  let driveBusy = false;
+
+  async function sendEspCommand(payload) {
+    sendPeerData({ type: 'esp_cmd', payload });
+    if (!state.espLiveEnabled) return;
+    payload.v = 1;
+    payload.seq = ++seqNum;
+    if (state.pairingKey) payload.key = state.pairingKey;
+    const endpoint = (location.hostname === '192.168.4.1') ? '/api' : (state.espUrl.replace(/\/$/, '') + '/api');
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 500);
+      // text/plain skips slow browser CORS OPTIONS preflight so ESP32 responds in <15ms!
+      const r = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload),
+        signal: ctrl.signal
+      });
+      clearTimeout(t);
+      return await r.json();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function updateEffectiveVoltageReadout(activePct) {
+    const outV = (Math.abs(activePct) / 100) * state.maxMotorV;
+    $('effVoltReadout').textContent = outV.toFixed(1) + 'V Out';
+  }
+
+  function computeWheelTorque() {
+    if (!state.armed || state.estop) {
+      state.motorLF = state.motorLR = state.motorRF = state.motorRR = 0;
+      $('speedReadout').textContent = '0%';
+      updateEffectiveVoltageReadout(0);
+      return;
+    }
+
+    if (state.spinDir !== 0) {
+      const sp = Math.max(70, state.leverPct || 80);
+      if (state.spinDir > 0) {
+        state.motorLF = state.motorLR = sp;
+        state.motorRF = state.motorRR = -sp;
+      } else {
+        state.motorLF = state.motorLR = -sp;
+        state.motorRF = state.motorRR = sp;
+      }
+      $('speedReadout').textContent = (state.spinDir > 0 ? '↻ ' : '↺ ') + sp + '%';
+      updateEffectiveVoltageReadout(sp);
+      sendEspCommand({ cmd: 'drive', left: state.motorLF, right: state.motorRF });
+      return;
+    }
+
+    const dirSign = state.gear === 'F' ? 1 : (state.gear === 'R' ? -1 : 0);
+    const base = Math.round(state.leverPct * dirSign);
+
+    if (state.steerDir === 0) {
+      state.motorLF = state.motorLR = state.motorRF = state.motorRR = base;
+      $('speedReadout').textContent = base + '%';
+      updateEffectiveVoltageReadout(base);
+      sendEspCommand({ cmd: 'drive', left: base, right: base });
+    } else {
+      if (Math.abs(base) < 8) {
+        const nudge = 75;
+        if (state.steerDir < 0) {
+          state.motorLF = state.motorLR = -45;
+          state.motorRF = state.motorRR = nudge;
+        } else {
+          state.motorLF = state.motorLR = nudge;
+          state.motorRF = state.motorRR = -45;
+        }
+      } else {
+        const inner = Math.round(base * 0.25);
+        if (state.steerDir < 0) {
+          state.motorLF = state.motorLR = inner;
+          state.motorRF = state.motorRR = base;
+        } else {
+          state.motorLF = state.motorLR = base;
+          state.motorRF = state.motorRR = inner;
+        }
+      }
+      const activeSpd = Math.abs(base || 75);
+      $('speedReadout').textContent = (state.steerDir < 0 ? '◄ ' : '► ') + activeSpd + '%';
+      updateEffectiveVoltageReadout(activeSpd);
+      sendEspCommand({ cmd: 'drive', left: state.motorLF, right: state.motorRF });
+    }
+  }
+
+  // CONTINUOUS 140ms DRIVE & HEARTBEAT LOOP (Ensures ESP32 NEVER times out while holding Throttle Lever!)
+  let wasMoving = false;
+  setInterval(async () => {
+    if (!state.espLiveEnabled || state.estop || !state.armed) return;
+    if (state.stunt !== 'none') return;
+    const l = state.motorLF, r = state.motorRF;
+    if (l !== 0 || r !== 0) {
+      wasMoving = true;
+      if (!driveBusy) {
+        driveBusy = true;
+        await sendEspCommand({ cmd: 'drive', left: l, right: r });
+        driveBusy = false;
+      }
+    } else if (wasMoving) {
+      wasMoving = false;
+      await sendEspCommand({ cmd: 'stop' });
+    }
+  }, 140);
+
+  applyMaxMotorVoltage(state.maxMotorV, false);
+
+  // =========================================================================
+  // GEAR SHIFTER (F / N / R) & ANALOG SPEED LEVER INTERACTION
+  // =========================================================================
+  function setGear(g, announce) {
+    state.gear = g;
+    $('btnGearF').className = 'gear-btn py-2.5 text-center flex flex-col items-center ' + (g === 'F' ? 'active-f' : '');
+    $('btnGearN').className = 'gear-btn py-2 text-center flex flex-col items-center ' + (g === 'N' ? 'active-n' : '');
+    $('btnGearR').className = 'gear-btn py-2.5 text-center flex flex-col items-center ' + (g === 'R' ? 'active-r' : '');
+    if (g === 'N') setLeverPercent(0);
+    if (g === 'R') {
+      state.leds.rl = state.leds.rr = true;
+      updateLedButtons();
+    }
+    computeWheelTorque();
+    if (announce) {
+      const msg = g === 'F' ? 'Ok Boss, Forward gear engaged!' : (g === 'R' ? 'Ok Boss, Reverse gear engaged!' : 'Neutral gear engaged.');
+      speakReply(msg);
+    }
+  }
+
+  $('btnGearF').addEventListener('click', () => setGear('F', true));
+  $('btnGearN').addEventListener('click', () => setGear('N', true));
+  $('btnGearR').addEventListener('click', () => setGear('R', true));
+
+  $('btnLeverHoldMode').addEventListener('click', () => {
+    state.springReturn = !state.springReturn;
+    $('btnLeverHoldMode').textContent = state.springReturn ? 'Spring: ON' : 'Cruise: HOLD';
+    $('btnLeverHoldMode').classList.toggle('!bg-emerald-500/30', !state.springReturn);
+  });
+
+  const leverTrack = $('leverTrack');
+  const leverFill = $('leverFill');
+  const leverKnob = $('leverKnob');
+  let leverDragging = false;
+
+  function setLeverPercent(pct) {
+    state.leverPct = Math.max(0, Math.min(100, Math.round(pct)));
+    leverFill.style.height = state.leverPct + '%';
+    leverKnob.style.bottom = state.leverPct + '%';
+    leverKnob.textContent = state.leverPct + '%';
+    computeWheelTorque();
+  }
+
+  function handleLeverPointer(e) {
+    const rect = leverTrack.getBoundingClientRect();
+    const relY = rect.bottom - e.clientY;
+    const pct = (relY / rect.height) * 100;
+    setLeverPercent(pct);
+  }
+
+  leverTrack.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    leverDragging = true;
+    leverTrack.setPointerCapture(e.pointerId);
+    handleLeverPointer(e);
+  });
+  leverTrack.addEventListener('pointermove', e => {
+    if (leverDragging) handleLeverPointer(e);
+  });
+  const endLever = () => {
+    if (!leverDragging) return;
+    leverDragging = false;
+    if (state.springReturn) {
+      setLeverPercent(0);
+      sendEspCommand({ cmd: 'stop' });
+    }
+  };
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => leverTrack.addEventListener(ev, endLever));
+
+  // =========================================================================
+  // STYLISH STEERING ARROWS & 360° ROTATE CW/CCW BUTTONS
+  // =========================================================================
+  function bindHoldButton(btnId, onDown, onUp) {
+    const el = $(btnId);
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      el.setPointerCapture(e.pointerId);
+      el.classList.add('active');
+      if (navigator.vibrate) navigator.vibrate(20);
+      onDown();
+    });
+    const release = () => {
+      if (!el.classList.contains('active')) return;
+      el.classList.remove('active');
+      onUp();
+    };
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => el.addEventListener(ev, release));
+  }
+
+  bindHoldButton('btnSteerLeft',
+    () => { state.steerDir = -1; computeWheelTorque(); },
+    () => { state.steerDir = 0; computeWheelTorque(); }
+  );
+  bindHoldButton('btnSteerRight',
+    () => { state.steerDir = 1; computeWheelTorque(); },
+    () => { state.steerDir = 0; computeWheelTorque(); }
+  );
+  bindHoldButton('btnSpinCCW',
+    () => { state.spinDir = -1; computeWheelTorque(); },
+    () => { state.spinDir = 0; computeWheelTorque(); }
+  );
+  bindHoldButton('btnSpinCW',
+    () => { state.spinDir = 1; computeWheelTorque(); },
+    () => { state.spinDir = 0; computeWheelTorque(); }
+  );
+
+  // =========================================================================
+  // SERVOS, 4x LEDS, SUBMERSIBLE PUMP, HORN & STUNTS
+  // =========================================================================
+  $('camServoSlider').addEventListener('input', e => {
+    state.camAngle = +e.target.value;
+    $('camAngleVal').textContent = state.camAngle + '°';
+    sendEspCommand({ cmd: 'servo', target: 'camera', action: 'pan', angle: state.camAngle });
+  });
+  $('btnCamCenter').addEventListener('click', () => {
+    state.camAngle = 90;
+    $('camServoSlider').value = 90;
+    $('camAngleVal').textContent = '90°';
+    sendEspCommand({ cmd: 'servo', target: 'camera', action: 'center' });
+  });
+
+  $('cargoServoSlider').addEventListener('input', e => {
+    state.cargoAngle = +e.target.value;
+    $('cargoAngleVal').textContent = state.cargoAngle + '°';
+    sendEspCommand({ cmd: 'servo', target: 'cargo', action: 'angle', angle: state.cargoAngle });
+  });
+  $('btnCargoOpen').addEventListener('click', () => {
+    state.cargoAngle = 105;
+    $('cargoServoSlider').value = 105;
+    $('cargoAngleVal').textContent = '105°';
+    sendEspCommand({ cmd: 'servo', target: 'cargo', action: 'open' });
+    speakReply('Ok Boss, cargo bay opened!');
+  });
+  $('btnCargoClose').addEventListener('click', () => {
+    state.cargoAngle = 10;
+    $('cargoServoSlider').value = 10;
+    $('cargoAngleVal').textContent = '10°';
+    sendEspCommand({ cmd: 'servo', target: 'cargo', action: 'close' });
+    speakReply('Ok Boss, cargo bay closed!');
+  });
+
+  function updateLedButtons() {
+    document.querySelectorAll('[data-led]').forEach(btn => {
+      const k = btn.dataset.led;
+      let active = false;
+      if (['fl', 'fr', 'rl', 'rr'].includes(k)) active = state.leds[k];
+      else if (k === 'all') active = state.leds.fl && state.leds.fr && state.leds.rl && state.leds.rr;
+      else active = (state.ledMode === k);
+      btn.classList.toggle('on', active);
+    });
+  }
+
+  document.querySelectorAll('[data-led]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const k = btn.dataset.led;
+      if (['fl', 'fr', 'rl', 'rr'].includes(k)) {
+        state.ledMode = 'normal';
+        state.leds[k] = !state.leds[k];
+        sendEspCommand({ cmd: 'lights', target: k, state: state.leds[k] });
+      } else if (k === 'all') {
+        state.ledMode = 'normal';
+        const next = !(state.leds.fl && state.leds.fr && state.leds.rl && state.leds.rr);
+        state.leds.fl = state.leds.fr = state.leds.rl = state.leds.rr = next;
+        sendEspCommand({ cmd: 'lights', target: 'all', state: next });
+      } else {
+        state.ledMode = (state.ledMode === k) ? 'normal' : k;
+        sendEspCommand({ cmd: 'lights', target: k, state: state.ledMode === k });
+      }
+      updateLedButtons();
+    });
+  });
+
+  $('btnPumpToggle').addEventListener('click', () => {
+    state.pumpOn = !state.pumpOn;
+    $('btnPumpToggle').textContent = state.pumpOn ? '💧 PUMP: ON' : '💧 PUMP: OFF';
+    $('btnPumpToggle').classList.toggle('!bg-cyan-400', state.pumpOn);
+    $('btnPumpToggle').classList.toggle('!text-black', state.pumpOn);
+    sendEspCommand({ cmd: 'pump', state: state.pumpOn, speed: state.pumpSpeed });
+    speakReply(state.pumpOn ? 'Ok Boss, submersible sprayer pump turned ON!' : 'Ok Boss, water pump turned OFF.');
+  });
+
+  $('pumpSpeedSlider').addEventListener('input', e => {
+    state.pumpSpeed = +e.target.value;
+    $('pumpSpeedVal').textContent = state.pumpSpeed + '%';
+    if (state.pumpOn) sendEspCommand({ cmd: 'pump', state: true, speed: state.pumpSpeed });
+  });
+
+  let stuntTimeout = null;
+  function triggerStunt(name) {
+    if (!state.armed || state.estop) {
+      speakReply('Boss, rover is disarmed. Arm it first!');
+      return;
+    }
+    state.stunt = name;
+    document.querySelectorAll('[data-stunt]').forEach(b => b.classList.toggle('active', b.dataset.stunt === name));
+    sendEspCommand({ cmd: 'stunt', name, speed: 85 });
+
+    const stuntLines = {
+      tornado: 'Ok Boss, performing 360 degree Tornado Spin stunt!',
+      snake: 'Ok Boss, activating Naagin Slalom Dance with camera sweep!',
+      burnout: 'Ok Boss, firing full power spin launch!',
+      shake: 'Ok Boss, shaking bogie suspension to clear Mars sand!',
+      spray_patrol: 'Ok Boss, starting Kisan Agro Spray Patrol mode!'
+    };
+    if (name === 'spray_patrol') state.pumpOn = true;
+    speakReply(stuntLines[name] || ('Executing stunt ' + name));
+
+    clearTimeout(stuntTimeout);
+    stuntTimeout = setTimeout(() => {
+      state.stunt = 'none';
+      document.querySelectorAll('[data-stunt]').forEach(b => b.classList.remove('active'));
+    }, 4200);
+  }
+
+  document.querySelectorAll('[data-stunt]').forEach(btn => {
+    btn.addEventListener('click', () => triggerStunt(btn.dataset.stunt));
+  });
+
+  $('btnArm').addEventListener('click', () => {
+    if (state.estop) {
+      state.estop = false;
+      sendEspCommand({ cmd: 'clear_estop' });
+    }
+    state.armed = !state.armed;
+    $('btnArm').textContent = state.armed ? 'ARMED' : 'DISARMED';
+    $('btnArm').className = 'px-2.5 py-1 rounded-lg font-hud font-bold text-[11px] shadow transition ' +
+      (state.armed ? 'bg-emerald-600 text-white' : 'bg-gray-700 text-gray-300');
+    computeWheelTorque();
+    sendEspCommand({ cmd: state.armed ? 'arm' : 'disarm' });
+    speakReply(state.armed ? 'Systems armed and ready Boss!' : 'Rover disarmed.');
+  });
+
+  $('btnEstop').addEventListener('click', () => {
+    state.estop = true;
+    state.armed = false;
+    state.pumpOn = false;
+    state.stunt = 'none';
+    setLeverPercent(0);
+    $('btnArm').textContent = 'E-STOP';
+    $('btnArm').className = 'px-2.5 py-1 rounded-lg font-hud font-bold text-[11px] bg-red-800 text-white';
+    sendEspCommand({ cmd: 'emergency_stop' });
+    speakReply('Emergency Stop activated! All motors and pump halted.');
+  });
+
+  $('btnBrake').addEventListener('click', () => {
+    setLeverPercent(0);
+    state.spinDir = 0;
+    state.steerDir = 0;
+    computeWheelTorque();
+    sendEspCommand({ cmd: 'brake' });
+  });
+
+  bindHoldButton('btnHorn',
+    () => { startHornSound(); sendEspCommand({ cmd: 'horn', state: true, ms: 1500 }); sendPeerData({ type: 'horn', on: true }); },
+    () => { stopHornSound(); sendEspCommand({ cmd: 'horn', state: false }); sendPeerData({ type: 'horn', on: false }); }
+  );
+
+  $('btnMusicToggle').addEventListener('click', toggleDjBeats);
+
+  $('hudOpacitySlider').addEventListener('input', e => {
+    const v = +e.target.value;
+    $('hudOpacityVal').textContent = v + '%';
+    document.documentElement.style.setProperty('--hud-alpha', (v / 100).toFixed(2));
+  });
+
+  // =========================================================================
+  // AI VOICE ASSISTANT
+  // =========================================================================
+  async function executeVoiceOrTextCommand(rawText, opts) {
+    const q = (rawText || '').trim();
+    if (!q) return;
+    const low = q.toLowerCase();
+    logRover('Command received: "' + q + '"');
+
+    const vMatch = low.match(/(\d+(?:\.\d+)?)\s*(?:v|volt|volts)/);
+    if (vMatch) {
+      applyMaxMotorVoltage(parseFloat(vMatch[1]), true);
+      return;
+    }
+
+    let handledLocally = true;
+    let reply = '';
+
+    if (low.includes('stop') || low.includes('ruko') || low.includes('ruk jao') || low.includes('band karo')) {
+      setLeverPercent(0); state.spinDir = 0; state.steerDir = 0; state.stunt = 'none'; computeWheelTorque();
+      sendEspCommand({ cmd: 'stop' });
+      reply = 'Ok Boss, stopping rover immediately!';
+    } else if (low.includes('left') || low.includes('baye') || low.includes('baaye')) {
+      state.steerDir = -1;
+      if (state.leverPct < 45) setLeverPercent(75);
+      computeWheelTorque();
+      setTimeout(() => { state.steerDir = 0; computeWheelTorque(); }, 1600);
+      reply = 'Ok Boss, turning left!';
+    } else if (low.includes('right') || low.includes('daye') || low.includes('daaye')) {
+      state.steerDir = 1;
+      if (state.leverPct < 45) setLeverPercent(75);
+      computeWheelTorque();
+      setTimeout(() => { state.steerDir = 0; computeWheelTorque(); }, 1600);
+      reply = 'Ok Boss, turning right!';
+    } else if (low.includes('anticlock') || low.includes('counter') || low.includes('ulta ghumo')) {
+      state.spinDir = -1; computeWheelTorque();
+      setTimeout(() => { state.spinDir = 0; computeWheelTorque(); }, 1800);
+      reply = 'Ok Boss, rotating anticlockwise 360 degrees!';
+    } else if (low.includes('clock') || low.includes('rotate') || low.includes('ghumo') || low.includes('spin')) {
+      state.spinDir = 1; computeWheelTorque();
+      setTimeout(() => { state.spinDir = 0; computeWheelTorque(); }, 1800);
+      reply = 'Ok Boss, rotating clockwise!';
+    } else if (low.includes('forward') || low.includes('aage') || low.includes('chalo')) {
+      setGear('F', false);
+      setLeverPercent(low.includes('fast') || low.includes('tej') || low.includes('full') ? 100 : 75);
+      reply = 'Ok Boss, moving forward!';
+    } else if (low.includes('reverse') || low.includes('back') || low.includes('piche')) {
+      setGear('R', false);
+      setLeverPercent(75);
+      reply = 'Ok Boss, moving in reverse!';
+    } else if (low.includes('pump on') || low.includes('spray') || low.includes('pani chalu') || low.includes('pump chalu')) {
+      state.pumpOn = true; $('btnPumpToggle').textContent = '💧 PUMP: ON';
+      sendEspCommand({ cmd: 'pump', state: true, speed: state.pumpSpeed });
+      reply = 'Ok Boss, submersible water pump activated!';
+    } else if (low.includes('pump off') || low.includes('pani band')) {
+      state.pumpOn = false; $('btnPumpToggle').textContent = '💧 PUMP: OFF';
+      sendEspCommand({ cmd: 'pump', state: false });
+      reply = 'Ok Boss, pump turned off!';
+    } else if (low.includes('light') || low.includes('led') || low.includes('batti')) {
+      const turnOff = low.includes('off') || low.includes('band');
+      state.leds.fl = state.leds.fr = state.leds.rl = state.leds.rr = !turnOff;
+      updateLedButtons();
+      sendEspCommand({ cmd: 'lights', target: 'all', state: !turnOff });
+      reply = turnOff ? 'Ok Boss, all four LEDs turned off!' : 'Ok Boss, all four rover LEDs turned on!';
+    } else if (low.includes('tornado') || low.includes('bawandar')) {
+      triggerStunt('tornado'); return;
+    } else if (low.includes('snake') || low.includes('naagin') || low.includes('dance') || low.includes('kartab')) {
+      triggerStunt('snake'); return;
+    } else if (low.includes('cargo open') || low.includes('box kholo')) {
+      $('btnCargoOpen').click(); return;
+    } else if (low.includes('cargo close') || low.includes('box band')) {
+      $('btnCargoClose').click(); return;
+    } else if (low.includes('horn') || low.includes('baja')) {
+      startHornSound(); setTimeout(stopHornSound, 900);
+      reply = 'Ok Boss, sounding rover horn!';
+    } else if (low.includes('song') || low.includes('music') || low.includes('gana')) {
+      toggleDjBeats(); return;
+    } else {
+      handledLocally = false;
+    }
+
+    if (handledLocally) {
+      if (!(opts && opts.silent)) speakReply(reply);
+      return;
+    }
+    if (opts && opts.silent) return;
+
+    if (state.apiKey && state.aiProvider !== 'offline') {
+      showSubtitle('Thinking via Online AI...');
+      const sysPrompt = `You are ${state.botName}, a smart voice AI mounted on Shivanshu's 6-wheel MARS-X6 Rover powered by ESP32 and a single L298N driver. Reply in 1 short energetic sentence (under 22 words) in Hinglish/English starting with "Ok Boss" or "Ji Boss". Also if the user wants a rover action, include one tag at the end: [ACT:LEFT], [ACT:RIGHT], [ACT:FORWARD], [ACT:REVERSE], [ACT:STOP], [ACT:PUMP_ON], [ACT:LIGHTS_ON], [ACT:TORNADO].`;
+      try {
+        let aiText = '';
+        if (state.aiProvider === 'gemini') {
+          const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(state.apiKey);
+          const r = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: sysPrompt + '\nUser said: ' + q }] }]
+            })
+          });
+          const j = await r.json();
+          aiText = j?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        } else if (state.aiProvider === 'openai') {
+          const r = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.apiKey },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: q }]
+            })
+          });
+          const j = await r.json();
+          aiText = j?.choices?.[0]?.message?.content || '';
+        }
+        if (aiText) {
+          const clean = aiText.replace(/\[ACT:[A-Z_]+\]/g, '').trim();
+          speakReply(clean);
+          if (aiText.includes('[ACT:LEFT]')) executeVoiceOrTextCommand('turn left');
+          else if (aiText.includes('[ACT:RIGHT]')) executeVoiceOrTextCommand('turn right');
+          else if (aiText.includes('[ACT:FORWARD]')) executeVoiceOrTextCommand('forward');
+          else if (aiText.includes('[ACT:REVERSE]')) executeVoiceOrTextCommand('reverse');
+          else if (aiText.includes('[ACT:STOP]')) executeVoiceOrTextCommand('stop');
+          else if (aiText.includes('[ACT:PUMP_ON]')) executeVoiceOrTextCommand('pump on');
+          else if (aiText.includes('[ACT:LIGHTS_ON]')) executeVoiceOrTextCommand('lights on');
+          else if (aiText.includes('[ACT:TORNADO]')) triggerStunt('tornado');
+          return;
+        }
+      } catch (err) {
+        logRover('Online AI fallback to Offline Brain: ' + err.message);
+      }
+    }
+
+    speakReply('Ji Boss, main ' + state.botName + ' hoon! 1x L298N ready hai aur Max voltage ' + state.maxMotorV.toFixed(1) + 'V par set hai.');
+  }
+
+  $('btnSendAiText').addEventListener('click', () => {
+    const v = $('aiTextInput').value;
+    $('aiTextInput').value = '';
+    handleUtterance(v);
+  });
+  $('aiTextInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') $('btnSendAiText').click();
+  });
+
+  let recognition = null;
+  function startSpeechRecognition(continuous) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      speakReply('Boss, this browser does not support Web Speech Mic. Use Chrome on Android!');
+      return;
+    }
+    try {
+      if (recognition) recognition.stop();
+      recognition = new SR();
+      recognition.lang = state.voiceLang || 'en-IN';
+      recognition.continuous = !!continuous;
+      recognition.interimResults = false;
+      $('voiceBtnTxt').textContent = 'Listening...';
+      recognition.onresult = ev => {
+        const transcript = ev.results[ev.results.length - 1][0].transcript;
+        $('aiTextInput').value = transcript;
+        handleUtterance(transcript);
+      };
+      recognition.onerror = ev => { logRover('Voice mic error: ' + ev.error); showSubtitle('Voice mic error: ' + ev.error); };
+      recognition.onend = () => {
+        $('voiceBtnTxt').textContent = 'Voice';
+        if (state.autoListen) {
+          try { recognition.start(); } catch (e) {}
+        }
+      };
+      recognition.start();
+    } catch (e) {
+      $('voiceBtnTxt').textContent = 'Voice';
+    }
+  }
+
+  $('btnVoicePtt').addEventListener('click', () => startSpeechRecognition(false));
+  $('btnAutoListen').addEventListener('click', () => {
+    state.autoListen = !state.autoListen;
+    $('btnAutoListen').textContent = state.autoListen ? '👂 Auto-Mic: ON' : '👂 Auto-Mic: OFF';
+    $('btnAutoListen').classList.toggle('!bg-emerald-500/30', state.autoListen);
+    if (state.autoListen) startSpeechRecognition(true);
+    else if (recognition) { try { recognition.stop(); } catch (e) {} }
+  });
+
+
+  // =========================================================================
+  // AI BRAIN (Gemini JSON: reply + actions) + AI EARS (Mic -> VAD -> Gemini audio)
+  // =========================================================================
+  let brainSeq = 0;
+  const brainHistory = [];
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const MOVE_ACTIONS = new Set(['forward', 'reverse', 'left', 'right', 'spin_cw', 'spin_ccw']);
+  const ACTION_CMD = {
+    forward: 'forward', reverse: 'reverse', left: 'turn left', right: 'turn right',
+    spin_cw: 'rotate clockwise', spin_ccw: 'rotate anticlockwise', stop: 'stop',
+    lights_on: 'lights on', lights_off: 'lights off', horn: 'horn',
+    pump_on: 'pump on', pump_off: 'pump off', tornado: 'tornado', snake: 'naagin',
+    cargo_open: 'cargo open', cargo_close: 'cargo close', music: 'music'
+  };
+
+  function brainSystemPrompt() {
+    return 'You are ' + state.botName + ', a friendly, witty voice AI living inside a 6-wheel rover called MARS-X6, built by Shivanshu. ' +
+      'The owner and people standing around the rover talk to you. Talk like a real person: warm, natural, short (1-3 spoken sentences, no emojis, no markdown, no lists). ' +
+      'Match the speaker language: if they speak Hindi or Hinglish reply in Hindi written in Devanagari script; if English reply in English. ' +
+      'Answer any general question normally (facts, jokes, advice, small talk). If asked who you are, say you are the rover. ' +
+      'You can also drive. ONLY when the speaker clearly asks the rover to move or do something, add actions. Understand intent in any phrasing ' +
+      '(for example "thoda aage aao", "peeche hato", "ghum jao", "ruk", "batti jalao", "dance karo"). ' +
+      'Allowed actions: forward, reverse, left, right, spin_cw, spin_ccw, stop, lights_on, lights_off, horn, pump_on, pump_off, tornado, snake, cargo_open, cargo_close, music. ' +
+      'Movement actions take "seconds" (0.5 to 5, default 2; "thoda" about 1, "bahut aage" about 4); forward may have "fast":true. Chain up to 4 actions in order. ' +
+      'Never move for hypothetical talk, for questions about movement, or when unsure - ask a short question instead. Obey stop/ruko immediately. ' +
+      'If the audio is silence, noise, music, or not meaningful speech, return {"heard":"","reply":"","actions":[]}. ' +
+      'Output ONLY JSON: {"heard":"<what the speaker said, transcribed>","reply":"<what you say aloud>","actions":[{"do":"forward","seconds":2}]}';
+  }
+
+  async function geminiBrain(parts) {
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(state.apiKey);
+    const body = {
+      systemInstruction: { parts: [{ text: brainSystemPrompt() }] },
+      contents: brainHistory.concat([{ role: 'user', parts }]),
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.6, thinkingConfig: { thinkingBudget: 0 } }
+    };
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (j.error) throw new Error(j.error.message || 'Gemini error');
+    const t = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts || []).map(p => p.text || '').join('');
+    return JSON.parse(t.replace(/```json|```/g, '').trim());
+  }
+
+  async function runBrainActions(actions) {
+    const my = ++brainSeq;
+    for (const raw of (actions || []).slice(0, 4)) {
+      if (my !== brainSeq) return;
+      const a = (typeof raw === 'string') ? { do: raw } : (raw || {});
+      const d = String(a.do || '').toLowerCase();
+      let cmd = ACTION_CMD[d];
+      if (!cmd) continue;
+      if (d === 'stop') { brainSeq++; await executeVoiceOrTextCommand('stop', { silent: true }); return; }
+      if (d === 'forward' && a.fast) cmd = 'forward fast';
+      await executeVoiceOrTextCommand(cmd, { silent: true });
+      if (MOVE_ACTIONS.has(d)) {
+        const s = Math.min(5, Math.max(0.5, Number(a.seconds) || 2));
+        await sleep(s * 1000);
+        if (my !== brainSeq) return;
+        await executeVoiceOrTextCommand('stop', { silent: true });
+        await sleep(250);
+      }
+    }
+  }
+
+  async function brainRun(parts, typedText) {
+    if (!state.apiKey || state.aiProvider !== 'gemini') return false;
+    ears.busy = true;
+    try {
+      showSubtitle('Thinking...');
+      const out = await geminiBrain(parts);
+      const heard = String(out.heard || typedText || '').trim();
+      const reply = String(out.reply || '').trim();
+      const acts = Array.isArray(out.actions) ? out.actions : [];
+      if (heard) logRover('Heard: "' + heard + '"');
+      if (!reply && !acts.length) return true;
+      brainHistory.push({ role: 'user', parts: [{ text: heard || '(unclear)' }] }, { role: 'model', parts: [{ text: reply || '(action)' }] });
+      while (brainHistory.length > 12) brainHistory.shift();
+      if (reply) { speakReply(reply); muteUntil = Date.now() + 1500 + reply.length * 80; }
+      if (acts.length) runBrainActions(acts);
+      return true;
+    } catch (e) {
+      logRover('AI error: ' + e.message);
+      showSubtitle('AI error: ' + e.message);
+      return false;
+    } finally {
+      ears.busy = false;
+    }
+  }
+
+  async function handleUtterance(text) {
+    const q = (text || '').trim();
+    if (!q) return;
+    const low = q.toLowerCase();
+    if (/^(stop|ruko|ruk jao|ruk|band karo)\b/.test(low)) { brainSeq++; executeVoiceOrTextCommand(q); return; }
+    if (bk.on) { backupThink(q); return; }
+    if (live.want && live.ws && live.ws.readyState === 1 && live.setupDone) { live.ws.send(JSON.stringify({ realtimeInput: { text: q } })); return; }
+    if (state.apiKey && state.aiProvider === 'gemini') {
+      const ok = await brainRun([{ text: q }], q);
+      if (ok) return;
+    }
+    executeVoiceOrTextCommand(q);
+  }
+
+  // ---- AI EARS: listens to a mic stream, cuts speech, sends WAV to Gemini ----
+  const ears = { on: false, ctx: null, src: null, proc: null, label: '', chunks: [], pre: [], speech: false, lastVoice: 0, startedAt: 0, floor: 0.004, busy: false, ownStream: null };
+  const EARS_MIN_RMS = 0.015;
+
+  function stopEars() {
+    try { if (ears.proc) { ears.proc.onaudioprocess = null; ears.proc.disconnect(); } } catch (e) {}
+    try { if (ears.src) ears.src.disconnect(); } catch (e) {}
+    try { if (ears.ctx) ears.ctx.close(); } catch (e) {}
+    try { if (ears.ownStream) ears.ownStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    ears.on = false; ears.ctx = null; ears.src = null; ears.proc = null; ears.ownStream = null;
+    ears.chunks = []; ears.pre = []; ears.speech = false; ears.busy = false;
+    updateEarsButtons();
+  }
+
+  function startEars(stream, label) {
+    stopEars();
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC || !stream || !stream.getAudioTracks().length) { showSubtitle('Mic audio stream nahi mili'); return; }
+    const ctx = new AC();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    const src = ctx.createMediaStreamSource(stream);
+    const proc = ctx.createScriptProcessor(4096, 1, 1);
+    const mute = ctx.createGain(); mute.gain.value = 0;
+    src.connect(proc); proc.connect(mute); mute.connect(ctx.destination);
+    proc.onaudioprocess = e => onEarsChunk(new Float32Array(e.inputBuffer.getChannelData(0)), ctx.sampleRate);
+    ears.ctx = ctx; ears.src = src; ears.proc = proc; ears.label = label; ears.on = true; ears.floor = 0.004;
+    updateEarsButtons();
+    logRover('AI Ears ON (' + label + ' mic). Ab bolna shuru karein.');
+    showSubtitle('Sun raha hoon... bolo!');
+  }
+
+  function onEarsChunk(buf, sr) {
+    let sum = 0;
+    for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+    const rms = Math.sqrt(sum / buf.length);
+    const now = Date.now();
+    if (ears.busy || now < muteUntil) { ears.chunks = []; ears.pre = []; ears.speech = false; return; }
+    const loud = rms > Math.max(EARS_MIN_RMS, ears.floor * 3.5);
+    if (!ears.speech) {
+      ears.floor = ears.floor * 0.95 + rms * 0.05;
+      ears.pre.push(buf); if (ears.pre.length > 3) ears.pre.shift();
+      if (loud) { ears.speech = true; ears.startedAt = now; ears.lastVoice = now; ears.chunks = ears.pre.slice(); ears.pre = []; }
+    } else {
+      ears.chunks.push(buf);
+      if (loud) ears.lastVoice = now;
+      const total = now - ears.startedAt;
+      const silent = now - ears.lastVoice;
+      if (silent > 1000 || total > 15000) {
+        const chunks = ears.chunks;
+        ears.chunks = []; ears.speech = false;
+        if (total - silent >= 500) sendEarsAudio(chunks, sr);
+      }
+    }
+  }
+
+  function toWav16kBase64(chunks, sr) {
+    let len = 0; chunks.forEach(c => len += c.length);
+    const all = new Float32Array(len); let o = 0;
+    chunks.forEach(c => { all.set(c, o); o += c.length; });
+    const ratio = sr / 16000;
+    const n = Math.floor(len / ratio);
+    const pcm = new Int16Array(n);
+    for (let i = 0; i < n; i++) {
+      const s0 = Math.floor(i * ratio), s1 = Math.min(len, Math.floor((i + 1) * ratio));
+      let a = 0, c = 0;
+      for (let j = s0; j < s1; j++) { a += all[j]; c++; }
+      let v = c ? a / c : 0;
+      v = Math.max(-1, Math.min(1, v));
+      pcm[i] = v < 0 ? v * 0x8000 : v * 0x7FFF;
+    }
+    const buf = new ArrayBuffer(44 + n * 2);
+    const dv = new DataView(buf);
+    const w = (off, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(off + i, s.charCodeAt(i)); };
+    w(0, 'RIFF'); dv.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
+    dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+    dv.setUint32(24, 16000, true); dv.setUint32(28, 32000, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true);
+    w(36, 'data'); dv.setUint32(40, n * 2, true);
+    new Int16Array(buf, 44, n).set(pcm);
+    const bytes = new Uint8Array(buf);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }
+
+  async function sendEarsAudio(chunks, sr) {
+    if (bk.on) { return backupHandle(chunks, sr); }
+    if (!state.apiKey || state.aiProvider !== 'gemini') {
+      logRover('AI Ears ke liye Gemini provider + API key set karein (🧠 AI API).');
+      return;
+    }
+    const b64 = toWav16kBase64(chunks, sr);
+    const who = ears.label === 'me' ? 'the owner (controlling the rover remotely)' : 'a person standing near the rover';
+    await brainRun([{ inlineData: { mimeType: 'audio/wav', data: b64 } }, { text: 'This audio is from ' + who + '. Respond per instructions.' }], '');
+  }
+
+
+
+  // =========================================================================
+  // ZIYA LIVE: Gemini 3.8 Live (voice-to-voice, girl voice, continuous talk)
+  // Rover mic -> laptop -> Gemini Live -> Ziya voice -> WebRTC -> rover phone speaker
+  // =========================================================================
+  const ZIYA_PERSONA = "Your name is Ziya. You are a girl-voiced AI personality who lives inside MARS-X6, a 6-wheel rocker-bogie Mars-rover-style robot built by a student named Shivanshu for a science exhibition. You are the rover's voice: people see the rover and hear you speaking as the rover (say 'main', 'mere wheels').\n" +
+    "LANGUAGE: Default to natural conversational Hinglish (Hindi plus simple English words) in a warm, cheerful, confident young-woman tone. If the person speaks pure English, answer in English; if pure Hindi, answer in Hindi. Keep answers short (1 to 3 sentences) unless someone asks you to explain in detail. No lists, no markdown, no emojis. Be polite and respectful to teachers: address them as sir or ma'am.\n" +
+    "ROLE: Science exhibition guide. Greet visitors, answer questions about yourself, the project and general science, and explain things clearly. If a teacher or judge asks about the project, explain confidently using ONLY these facts: six wheels with rocker-bogie suspension (the same idea used in NASA Mars rovers Curiosity and Perseverance, it keeps the wheels on the ground over uneven terrain); a laser-cut plywood and MDF chassis designed in FreeCAD; an ESP32 microcontroller is the brain and drives the BO motors through motor driver modules; a smartphone on top provides live FPV video, microphone and speaker, mounted on a servo that can pan it; a remote operator drives it from a laptop over the internet with live video; you, Ziya, are powered by Google's Gemini Live AI; extras are a cargo compartment with a servo-opened acrylic lid, LED lights, a water pump and a horn. If asked for numbers or details not listed here (speed, battery life, cost, weight), honestly say Shivanshu can answer that, and never invent specifications.\n" +
+    "HONESTY: You are an AI, not a human. If someone sincerely asks, say you are an AI voice for the rover.\n" +
+    "DRIVING: You can move the rover with the rover_action tool. Use it only when someone clearly asks the rover to move or do something (forward/aage, back/peeche, left, right, rotate/ghumo, stop/ruko, lights, horn, pump, cargo open/close, tornado or snake stunts, music). Understand intent in any phrasing and chain actions in order. Keep movement short (default 2 seconds, max 5) because people are standing nearby. If unsure or the request sounds unsafe, ask a short question instead of moving. When asked to stop, call stop immediately. Say a short natural line while you act, like 'Theek hai sir, aage chal rahi hoon.'\n" +
+    "NOISE: Ignore background noise and side conversations not meant for you; if you are not sure someone is talking to you, stay quiet.";
+
+  const ZIYA_VOICES = ['Leda', 'Kore', 'Aoede', 'Zephyr', 'Callirrhoe'];
+  const ziya = {
+    name: loadStore('mars_ziya_name', 'Ziya'),
+    voice: loadStore('mars_ziya_voice', 'Leda'),
+    persona: loadStore('mars_ziya_persona', ''),
+    leds: loadStore('mars_ziya_leds', '1') === '1'
+  };
+  const ROVER_FN = {
+    name: 'rover_action',
+    behavior: 'BLOCKING',
+    description: 'Move or operate the rover. Call only when the person clearly asks the rover to do something.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        actions: {
+          type: 'ARRAY',
+          description: 'Ordered list of actions to run one after another.',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              do: { type: 'STRING', description: 'One of: forward, reverse, left, right, spin_cw, spin_ccw, stop, lights_on, lights_off, horn, pump_on, pump_off, tornado, snake, cargo_open, cargo_close, music' },
+              seconds: { type: 'NUMBER', description: 'Duration for movement actions, 0.5 to 5 seconds' },
+              fast: { type: 'BOOLEAN', description: 'Optional, faster forward' }
+            },
+            required: ['do']
+          }
+        }
+      },
+      required: ['actions']
+    }
+  };
+
+  const live = { want: false, ws: null, label: '', stream: null, src: null, proc: null, gain: null, ownStream: null, nextT: 0, srcs: new Set(), handle: null, setupDone: false, greeted: false, retries: 0, sentEnd: false, inBuf: '', outBuf: '' };
+
+  function ziyaPrompt() {
+    return (ziya.persona && ziya.persona.trim()) ? ziya.persona : ZIYA_PERSONA.replace(/Ziya/g, ziya.name || 'Ziya');
+  }
+
+  function liveSetup() {
+    return {
+      setup: {
+        model: 'models/gemini-3.8-live',
+        generationConfig: {
+          responseModalities: ['AUDIO'],
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: ziya.voice } } }
+        },
+        systemInstruction: { parts: [{ text: ziyaPrompt() }] },
+        tools: [{ functionDeclarations: [ROVER_FN] }],
+        inputAudioTranscription: {},
+        outputAudioTranscription: {},
+        contextWindowCompression: { slidingWindow: {} },
+        sessionResumption: live.handle ? { handle: live.handle } : {}
+      }
+    };
+  }
+
+  function pcm16Bytes(buf, sr) {
+    const ratio = sr / 16000;
+    const n = Math.floor(buf.length / ratio);
+    const out = new Int16Array(n);
+    for (let i = 0; i < n; i++) {
+      const s0 = Math.floor(i * ratio), s1 = Math.min(buf.length, Math.floor((i + 1) * ratio));
+      let a = 0, c = 0;
+      for (let j = s0; j < s1; j++) { a += buf[j]; c++; }
+      let v = c ? a / c : 0;
+      v = Math.max(-1, Math.min(1, v));
+      out[i] = v < 0 ? v * 0x8000 : v * 0x7FFF;
+    }
+    return new Uint8Array(out.buffer);
+  }
+  function b64Of(u8) {
+    let bin = '';
+    for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }
+
+  function liveSend(obj) {
+    if (live.ws && live.ws.readyState === 1) live.ws.send(JSON.stringify(obj));
+  }
+
+  function liveGateClosed() {
+    return !!audioCtx && audioCtx.currentTime < live.nextT + 0.8;
+  }
+
+  function startLiveMic(stream) {
+    const ctx = ensureAudio();
+    if (!ctx || !stream || !stream.getAudioTracks().length) return false;
+    live.src = ctx.createMediaStreamSource(stream);
+    live.proc = ctx.createScriptProcessor(4096, 1, 1);
+    live.gain = ctx.createGain(); live.gain.gain.value = 0;
+    live.src.connect(live.proc); live.proc.connect(live.gain); live.gain.connect(ctx.destination);
+    live.proc.onaudioprocess = e => {
+      if (!live.setupDone || !live.ws || live.ws.readyState !== 1) return;
+      if (liveGateClosed()) {
+        if (!live.sentEnd) { live.sentEnd = true; liveSend({ realtimeInput: { audioStreamEnd: true } }); }
+        return;
+      }
+      live.sentEnd = false;
+      const bytes = pcm16Bytes(e.inputBuffer.getChannelData(0), ctx.sampleRate);
+      liveSend({ realtimeInput: { audio: { data: b64Of(bytes), mimeType: 'audio/pcm;rate=16000' } } });
+    };
+    return true;
+  }
+
+  function stopLivePlayback() {
+    live.srcs.forEach(s => { try { s.stop(); } catch (e) {} });
+    live.srcs.clear();
+    live.nextT = 0;
+  }
+
+  function playLiveAudio(b64) {
+    const ctx = ensureAudio();
+    if (!ctx) return;
+    const bin = atob(b64);
+    const n = bin.length >> 1;
+    const f = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      let v = bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8);
+      if (v & 0x8000) v -= 0x10000;
+      f[i] = v / 32768;
+    }
+    const buf = ctx.createBuffer(1, n, 24000);
+    buf.copyToChannel(f, 0);
+    const s = ctx.createBufferSource();
+    s.buffer = buf;
+    let toRover = false;
+    try { toRover = !!(dataConn && dataConn.open && !localStream && audioDestNode); } catch (e) {}
+    s.connect(toRover ? audioDestNode : ctx.destination);
+    const t = Math.max(ctx.currentTime + 0.05, live.nextT);
+    s.start(t);
+    live.nextT = t + buf.duration;
+    live.srcs.add(s);
+    s.onended = () => live.srcs.delete(s);
+  }
+
+  function handleLiveTool(tc) {
+    const responses = [];
+    for (const fc of (tc.functionCalls || [])) {
+      let result = { status: 'ok' };
+      if (fc.name === 'rover_action') {
+        const args = fc.args || {};
+        const acts = Array.isArray(args.actions) ? args.actions : (args.do ? [args] : []);
+        logRover('Ziya action: ' + JSON.stringify(acts));
+        runBrainActions(acts);
+        result = { status: 'started' };
+      } else {
+        result = { error: 'unknown function' };
+      }
+      responses.push({ id: fc.id, name: fc.name, response: { result } });
+    }
+    liveSend({ toolResponse: { functionResponses: responses } });
+  }
+
+  function handleLiveMsg(m) {
+    if (m.setupComplete) {
+      live.setupDone = true; live.retries = 0;
+      showSubtitle(ziya.name + ' ready. Bolo!');
+      logRover('Ziya Live connected (gemini-3.8-live, voice ' + ziya.voice + ').');
+      if (!live.greeted) {
+        live.greeted = true;
+        liveSend({ realtimeInput: { text: 'The microphone was just switched on. Greet the people around you in one short sentence and say your name.' } });
+      }
+      return;
+    }
+    if (m.sessionResumptionUpdate && m.sessionResumptionUpdate.newHandle && m.sessionResumptionUpdate.resumable !== false) {
+      live.handle = m.sessionResumptionUpdate.newHandle;
+    }
+    if (m.goAway) { try { live.ws.close(); } catch (e) {} return; }
+    if (m.toolCall) { handleLiveTool(m.toolCall); return; }
+    const sc = m.serverContent;
+    if (!sc) return;
+    if (sc.interrupted) stopLivePlayback();
+    if (sc.modelTurn && sc.modelTurn.parts) {
+      for (const p of sc.modelTurn.parts) {
+        if (p.inlineData && p.inlineData.data) playLiveAudio(p.inlineData.data);
+      }
+    }
+    if (sc.inputTranscription && sc.inputTranscription.text) live.inBuf += sc.inputTranscription.text;
+    if (sc.outputTranscription && sc.outputTranscription.text) {
+      live.outBuf += sc.outputTranscription.text;
+      showSubtitle(live.outBuf.trim());
+    }
+    if (sc.turnComplete) {
+      if (live.inBuf.trim()) logRover('You: ' + live.inBuf.trim());
+      if (live.outBuf.trim()) logRover(ziya.name + ': ' + live.outBuf.trim());
+      live.inBuf = ''; live.outBuf = '';
+    }
+  }
+
+  function connectLive() {
+    const url = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=' + encodeURIComponent(state.apiKey);
+    const ws = new WebSocket(url);
+    live.ws = ws; live.setupDone = false;
+    ws.onopen = () => { ws.send(JSON.stringify(liveSetup())); };
+    ws.onmessage = async ev => {
+      let data = ev.data;
+      if (data instanceof Blob) data = await data.text();
+      let m; try { m = JSON.parse(data); } catch (e) { return; }
+      if (live.ws === ws) handleLiveMsg(m);
+    };
+    ws.onerror = () => { logRover('Ziya Live: connection error'); };
+    ws.onclose = ev => {
+      if (live.ws !== ws) return;
+      live.setupDone = false;
+      const why = ev.reason || ('code ' + ev.code);
+      logRover('Ziya Live closed: ' + why);
+      if (!live.want) return;
+      if (live.retries < 3) { live.retries++; setTimeout(() => { if (live.want) connectLive(); }, 800); }
+      else {
+        const st = live.stream, lb = live.label, own = live.ownStream;
+        live.ownStream = null;
+        if (ziya.groqKey && ziya.auto && st) {
+          teardownLive(); updateEarsButtons();
+          showSubtitle('Gemini Live band (' + why + '). Backup Ziya chalu ho rahi hai...');
+          startBackup(st, lb, own);
+        } else {
+          if (own) own.getTracks().forEach(t => t.stop());
+          showSubtitle('Ziya Live band hua: ' + why); stopLive();
+        }
+      }
+    };
+  }
+
+  function setLiveLight(on) {
+    if (!ziya.leds) return;
+    try { executeVoiceOrTextCommand(on ? 'lights on' : 'lights off', { silent: true }); } catch (e) {}
+  }
+
+  function teardownLive() {
+    live.want = false;
+    const ws = live.ws; live.ws = null;
+    try { if (ws) ws.close(); } catch (e) {}
+    try { if (live.proc) { live.proc.onaudioprocess = null; live.proc.disconnect(); } } catch (e) {}
+    try { if (live.src) live.src.disconnect(); } catch (e) {}
+    try { if (live.gain) live.gain.disconnect(); } catch (e) {}
+    try { if (live.ownStream) live.ownStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    live.src = null; live.proc = null; live.gain = null; live.ownStream = null; live.setupDone = false;
+    stopLivePlayback();
+  }
+
+  function stopLive() {
+    if (bk.on) stopBackup();
+    const was = live.want || !!live.ws;
+    teardownLive();
+    live.handle = null; live.greeted = false; live.inBuf = ''; live.outBuf = '';
+    if (was) setLiveLight(false);
+    updateEarsButtons();
+    showSubtitle('Mic band. Ziya so gayi.');
+  }
+
+  function startLive(stream, label, ownStream) {
+    if (!state.apiKey || state.aiProvider !== 'gemini') {
+      showSubtitle('Pehle 🧠 AI API me Provider Gemini chunein aur API key daalein');
+      if (ownStream) ownStream.getTracks().forEach(t => t.stop());
+      return;
+    }
+    if (bk.on) stopBackup();
+    teardownLive();
+    live.handle = null; live.greeted = false; live.retries = 0;
+    if (!startLiveMic(stream)) {
+      showSubtitle('Mic audio stream nahi mili');
+      if (ownStream) ownStream.getTracks().forEach(t => t.stop());
+      return;
+    }
+    live.ownStream = ownStream || null;
+    live.want = true; live.label = label; live.stream = stream;
+    connectLive();
+    setLiveLight(true);
+    updateEarsButtons();
+    showSubtitle(ziya.name + ' se jud rahi hoon...');
+  }
+
+  function updateEarsButtons() {
+    const b1 = $('btnEars'), b2 = $('btnMyMic');
+    const r = live.want && live.label === 'rover', m = live.want && live.label === 'me';
+    if (b1) { b1.textContent = r ? '🎧 Ziya Live (Rover Mic): ON' : '🎧 Ziya Live (Rover Mic): OFF'; b1.classList.toggle('!bg-emerald-400', r); }
+    if (b2) { b2.textContent = m ? '🎙️ Ziya (My Mic): ON' : '🎙️ Ziya (My Mic): OFF'; b2.classList.toggle('!bg-emerald-400', m); }
+    const b3 = $('btnBackup');
+    if (b3) { b3.textContent = bk.on ? '🛟 Ziya Backup: ON' : '🛟 Ziya Backup: OFF'; b3.classList.toggle('!bg-emerald-400', bk.on); }
+  }
+
+  function openZiyaPanel() {
+    let p = document.getElementById('ziyaPanel');
+    if (p) { p.remove(); }
+    p = document.createElement('div');
+    p.id = 'ziyaPanel';
+    p.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:12px;';
+    const opts = ZIYA_VOICES.map(v => '<option value="' + v + '"' + (v === ziya.voice ? ' selected' : '') + '>' + v + '</option>').join('');
+    p.innerHTML = '<div style="background:#111;border:1px solid #fab515;border-radius:12px;padding:14px;max-width:560px;width:100%;max-height:92vh;overflow:auto;color:#eee;font:13px sans-serif">' +
+      '<div style="font-weight:700;color:#fab515;margin-bottom:8px">⚙️ Ziya Setup (Gemini 3.8 Live)</div>' +
+      '<label>Naam</label><input id="zpName" style="width:100%;margin:4px 0 8px;padding:6px;background:#222;color:#fff;border-radius:6px">' +
+      '<label>Awaaz (girl voice)</label><select id="zpVoice" style="width:100%;margin:4px 0 8px;padding:6px;background:#222;color:#fff;border-radius:6px">' + opts + '</select>' +
+      '<label>Role / Persona (khaali chhodein = default Ziya exhibition persona)</label><textarea id="zpPersona" rows="10" style="width:100%;margin:4px 0 8px;padding:6px;background:#222;color:#fff;border-radius:6px"></textarea>' +
+      '<div style="border-top:1px solid #333;margin:8px 0;padding-top:8px"><b style="color:#fab515">🛟 Backup (Groq + Kokoro)</b></div>' +
+      '<label>Groq API Key (gsk_...)</label><input id="zpGroq" type="password" style="width:100%;margin:4px 0 8px;padding:6px;background:#222;color:#fff;border-radius:6px">' +
+      '<label>Backup English voice (Kokoro)</label><select id="zpBkVoice" style="width:100%;margin:4px 0 8px;padding:6px;background:#222;color:#fff;border-radius:6px"><option value="af_heart">af_heart (best)</option><option value="af_bella">af_bella</option><option value="af_nicole">af_nicole</option><option value="af_sarah">af_sarah</option></select>' +
+      '<label style="display:block;margin-bottom:6px"><input type="checkbox" id="zpAuto"> Gemini Live fail/limit ho to apne-aap Backup chalu karo</label>' +
+      '<button id="zpPreload" style="padding:6px 12px;background:#333;color:#fff;border-radius:6px;margin-bottom:10px">Backup voice pehle se download karo (~90MB)</button>' +
+      '<label style="display:block;margin-bottom:10px"><input type="checkbox" id="zpLeds"> Mic ON hone par rover LEDs jalein, mic OFF par band</label>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button id="zpSave" style="padding:6px 12px;background:#fab515;color:#000;border-radius:6px;font-weight:700">Save</button>' +
+      '<button id="zpDefault" style="padding:6px 12px;background:#333;color:#fff;border-radius:6px">Default persona dikhao</button>' +
+      '<button id="zpClose" style="padding:6px 12px;background:#333;color:#fff;border-radius:6px">Close</button></div>' +
+      '<div style="margin-top:8px;color:#aaa">Naya persona/awaaz ke liye mic ek baar band karke dobara ON karein.</div></div>';
+    document.body.appendChild(p);
+    document.getElementById('zpName').value = ziya.name;
+    document.getElementById('zpPersona').value = ziya.persona;
+    document.getElementById('zpLeds').checked = ziya.leds;
+    document.getElementById('zpGroq').value = ziya.groqKey;
+    document.getElementById('zpBkVoice').value = ziya.bkVoice;
+    document.getElementById('zpAuto').checked = ziya.auto;
+    document.getElementById('zpPreload').onclick = () => { loadKokoro().catch(e => showSubtitle('Kokoro error: ' + e.message)); };
+    document.getElementById('zpDefault').onclick = () => { document.getElementById('zpPersona').value = ZIYA_PERSONA.replace(/Ziya/g, document.getElementById('zpName').value || 'Ziya'); };
+    document.getElementById('zpClose').onclick = () => p.remove();
+    document.getElementById('zpSave').onclick = () => {
+      ziya.name = (document.getElementById('zpName').value || 'Ziya').trim();
+      ziya.voice = document.getElementById('zpVoice').value;
+      ziya.persona = document.getElementById('zpPersona').value;
+      ziya.leds = document.getElementById('zpLeds').checked;
+      ziya.groqKey = document.getElementById('zpGroq').value.trim();
+      ziya.bkVoice = document.getElementById('zpBkVoice').value;
+      ziya.auto = document.getElementById('zpAuto').checked;
+      saveStore('mars_groq_key', ziya.groqKey); saveStore('mars_ziya_bkvoice', ziya.bkVoice); saveStore('mars_ziya_auto', ziya.auto ? '1' : '0');
+      bk.llm = ''; bk.stt = '';
+      saveStore('mars_ziya_name', ziya.name); saveStore('mars_ziya_voice', ziya.voice);
+      saveStore('mars_ziya_persona', ziya.persona); saveStore('mars_ziya_leds', ziya.leds ? '1' : '0');
+      state.botName = ziya.name; saveStore('mars_bot_name', ziya.name);
+      p.remove();
+      showSubtitle('Ziya settings save ho gayi.');
+    };
+  }
+
+  state.botName = ziya.name;
+
+  $('btnEars').addEventListener('click', () => {
+    if (live.want && live.label === 'rover') { stopLive(); return; }
+    let st = localStream;
+    if (!st) { const v = $('fpvVideo'); st = v && v.srcObject; }
+    if (!st || !st.getAudioTracks || !st.getAudioTracks().length) {
+      showSubtitle('Pehle Rover camera start karein / laptop par Connect Video dabayein');
+      logRover('Rover mic stream nahi mili: pehle camera start ya Connect Video.');
+      return;
+    }
+    startLive(st, 'rover', null);
+  });
+
+  $('btnMyMic').addEventListener('click', async () => {
+    if (live.want && live.label === 'me') { stopLive(); return; }
+    try {
+      const st = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      startLive(st, 'me', st);
+    } catch (e) {
+      logRover('Mic error: ' + e.message);
+      showSubtitle('Mic permission nahi mili: ' + e.message);
+    }
+  });
+
+  $('btnZiya').addEventListener('click', openZiyaPanel);
+  $('btnEstop').addEventListener('click', () => { brainSeq++; });
+
+
+  // =========================================================================
+  // ZIYA BACKUP: Groq Whisper (hearing) + Groq LLM (brain) + Kokoro-82M from Hugging Face (English voice)
+  // Hindi replies go to the rover phone's own TTS. Used when Gemini Live hits a limit/error.
+  // =========================================================================
+  ziya.groqKey = loadStore('mars_groq_key', '');
+  ziya.bkVoice = loadStore('mars_ziya_bkvoice', 'af_heart');
+  ziya.auto = loadStore('mars_ziya_auto', '1') === '1';
+  const bk = { on: false, tts: null, loading: null, llm: '', stt: '', history: [], ownStream: null };
+  const GROQ = 'https://api.groq.com/openai/v1';
+  const BK_RULES = '\nOUTPUT FORMAT: Ignore any mention of tools. Reply with ONLY a JSON object: {"reply":"<spoken reply, max 2 short sentences>","lang":"en","actions":[{"do":"forward","seconds":2}]}. ' +
+    'If you answer in English set lang to "en". If the speaker used Hindi or Hinglish, answer in Hindi written in Devanagari script and set lang to "hi". ' +
+    'actions may be empty. Allowed do values: forward, reverse, left, right, spin_cw, spin_ccw, stop, lights_on, lights_off, horn, pump_on, pump_off, tornado, snake, cargo_open, cargo_close, music. ' +
+    'Use actions only when clearly asked to move or act. If the text is clearly noise or not meant for you, return {"reply":"","lang":"en","actions":[]}.';
+
+  async function groqModels() {
+    if (bk.llm && bk.stt) return;
+    const r = await fetch(GROQ + '/models', { headers: { Authorization: 'Bearer ' + ziya.groqKey } });
+    const j = await r.json();
+    if (!r.ok) throw new Error((j.error && j.error.message) || ('Groq ' + r.status));
+    const ids = (j.data || []).map(m => m.id);
+    const pick = prefs => prefs.find(p => ids.includes(p));
+    bk.llm = pick(['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'llama-3.1-8b-instant', 'qwen/qwen3-32b']) || ids.find(i => !/whisper|guard|tts|playai|compound|safeguard/i.test(i)) || '';
+    bk.stt = pick(['whisper-large-v3-turbo', 'whisper-large-v3']) || '';
+    if (!bk.llm) throw new Error('Groq account me chat model nahi mila');
+    if (!bk.stt) throw new Error('Groq account me whisper model nahi mila');
+    logRover('Backup models: ' + bk.stt + ' + ' + bk.llm);
+  }
+
+  async function groqTranscribe(b64wav) {
+    const bin = atob(b64wav);
+    const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    const fd = new FormData();
+    fd.append('file', new Blob([u8], { type: 'audio/wav' }), 'speech.wav');
+    fd.append('model', bk.stt);
+    fd.append('response_format', 'json');
+    fd.append('temperature', '0');
+    fd.append('prompt', 'Conversation with a rover named Ziya, in Hindi, English or Hinglish.');
+    const r = await fetch(GROQ + '/audio/transcriptions', { method: 'POST', headers: { Authorization: 'Bearer ' + ziya.groqKey }, body: fd });
+    const j = await r.json();
+    if (!r.ok) throw new Error((j.error && j.error.message) || ('Groq STT ' + r.status));
+    return (j.text || '').trim();
+  }
+
+  async function groqThink(text) {
+    const msgs = [{ role: 'system', content: ziyaPrompt() + BK_RULES }].concat(bk.history.slice(-8)).concat([{ role: 'user', content: text }]);
+    const body = { model: bk.llm, messages: msgs, temperature: 0.6, max_tokens: 500, response_format: { type: 'json_object' } };
+    const go = () => fetch(GROQ + '/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ziya.groqKey }, body: JSON.stringify(body) });
+    let r = await go();
+    if (r.status === 400) { delete body.response_format; r = await go(); }
+    const j = await r.json();
+    if (!r.ok) throw new Error((j.error && j.error.message) || ('Groq chat ' + r.status));
+    let t = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
+    t = t.replace(/<think>[\s\S]*?<\/think>/g, '');
+    const m = t.match(/\{[\s\S]*\}/);
+    return JSON.parse(m ? m[0] : t);
+  }
+
+  function loadKokoro() {
+    if (bk.tts) return Promise.resolve(bk.tts);
+    if (!bk.loading) {
+      bk.loading = (async () => {
+        showSubtitle('Backup voice (Kokoro) download ho rahi hai, pehli baar ~90MB...');
+        const mod = await import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm');
+        bk.tts = await mod.KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX', { dtype: 'q8', device: 'wasm' });
+        showSubtitle('Backup voice ready.');
+        logRover('Kokoro voice loaded.');
+        return bk.tts;
+      })().catch(e => { bk.loading = null; throw e; });
+    }
+    return bk.loading;
+  }
+
+  function playFloat(f, rate) {
+    const ctx = ensureAudio();
+    const buf = ctx.createBuffer(1, f.length, rate);
+    buf.copyToChannel(f, 0);
+    const s = ctx.createBufferSource();
+    s.buffer = buf;
+    let toRover = false;
+    try { toRover = !!(dataConn && dataConn.open && !localStream && audioDestNode); } catch (e) {}
+    s.connect(toRover ? audioDestNode : ctx.destination);
+    const t = Math.max(ctx.currentTime + 0.05, live.nextT);
+    s.start(t);
+    live.nextT = t + buf.duration;
+    return buf.duration;
+  }
+
+  async function backupSpeak(reply, lang) {
+    if (!reply) return;
+    muteUntil = Date.now() + 2500 + reply.length * 90;
+    if (lang === 'en') {
+      try {
+        const tts = await loadKokoro();
+        const a = await tts.generate(reply, { voice: ziya.bkVoice || 'af_heart' });
+        const d = playFloat(a.audio, a.sampling_rate);
+        muteUntil = Date.now() + d * 1000 + 900;
+        showSubtitle(reply);
+        return;
+      } catch (e) { logRover('Kokoro error: ' + e.message); }
+    }
+    speakReply(reply);
+  }
+
+  async function backupThink(text) {
+    if (!ziya.groqKey) { showSubtitle('Backup ke liye ⚙️ Ziya me Groq key daalein'); return; }
+    ears.busy = true;
+    try {
+      await groqModels();
+      const out = await groqThink(text);
+      const reply = String(out.reply || '').trim();
+      const acts = Array.isArray(out.actions) ? out.actions : [];
+      if (!reply && !acts.length) return;
+      bk.history.push({ role: 'user', content: text }, { role: 'assistant', content: reply || '(action)' });
+      while (bk.history.length > 12) bk.history.shift();
+      if (acts.length) runBrainActions(acts);
+      await backupSpeak(reply, out.lang === 'hi' ? 'hi' : 'en');
+    } catch (e) {
+      logRover('Backup error: ' + e.message);
+      showSubtitle('Backup error: ' + e.message);
+    } finally {
+      ears.busy = false;
+    }
+  }
+
+  async function backupHandle(chunks, sr) {
+    ears.busy = true;
+    try {
+      await groqModels();
+      const text = await groqTranscribe(toWav16kBase64(chunks, sr));
+      if (!text || text.length < 3 || /Conversation with a rover/i.test(text)) return;
+      logRover('Heard: "' + text + '"');
+      await backupThink(text);
+    } catch (e) {
+      logRover('Backup STT error: ' + e.message);
+      showSubtitle('Backup error: ' + e.message);
+    } finally {
+      ears.busy = false;
+    }
+  }
+
+  async function startBackup(stream, label, own) {
+    if (!ziya.groqKey) {
+      showSubtitle('Backup ke liye ⚙️ Ziya me Groq key daalein');
+      if (own) own.getTracks().forEach(t => t.stop());
+      return;
+    }
+    teardownLive();
+    try { stopEars(); } catch (e) {}
+    bk.on = true; bk.ownStream = own || null;
+    startEars(stream, label);
+    setLiveLight(true);
+    updateEarsButtons();
+    try {
+      await groqModels();
+      loadKokoro().catch(e => logRover('Kokoro load error: ' + e.message));
+      showSubtitle('Backup Ziya chalu (Groq + Kokoro). Bolo!');
+      backupSpeak('Hello, I am ' + ziya.name + '. Backup mode is on.', 'en');
+    } catch (e) {
+      logRover('Backup error: ' + e.message);
+      showSubtitle('Backup error: ' + e.message);
+      stopBackup();
+    }
+  }
+
+  function stopBackup() {
+    const was = bk.on;
+    bk.on = false;
+    try { stopEars(); } catch (e) {}
+    if (bk.ownStream) { try { bk.ownStream.getTracks().forEach(t => t.stop()); } catch (e) {} bk.ownStream = null; }
+    if (was) setLiveLight(false);
+    updateEarsButtons();
+  }
+
+  $('btnBackup').addEventListener('click', () => {
+    if (bk.on) { stopBackup(); showSubtitle('Backup band.'); return; }
+    let st = localStream;
+    if (!st) { const v = $('fpvVideo'); st = v && v.srcObject; }
+    if (!st || !st.getAudioTracks || !st.getAudioTracks().length) {
+      showSubtitle('Pehle Rover camera start karein / laptop par Connect Video dabayein');
+      return;
+    }
+    if (live.want) stopLive();
+    startBackup(st, 'rover', null);
+  });
+
+  // =========================================================================
+  // LIVE CAMERA + LIVE MIC STREAMING (WEBRTC) + MUTE + FPV RECORDING
+  // =========================================================================
+  let localStream = null;
+  let facingMode = 'environment';
+  let peer = null;
+  let dataConn = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+
+  function sendPeerData(obj) {
+    try {
+      if (dataConn && dataConn.open) dataConn.send(obj);
+    } catch (e) {}
+  }
+
+  async function startRoverCameraAndMic() {
+    ensureAudio();
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      logRover('Camera requires HTTPS or chrome://flags/#unsafely-treat-insecure-origin-as-secure');
+      speakReply('Boss, enable insecure origin flag in Chrome or use HTTPS for live camera!');
+      return;
+    }
+    try {
+      if (localStream) localStream.getTracks().forEach(t => t.stop());
+      localStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: true
+      });
+      const v = $('fpvVideo');
+      v.srcObject = localStream;
+      v.muted = true;
+      v.classList.remove('hidden');
+      await v.play().catch(() => {});
+      $('roverNodeBadge').textContent = 'LIVE STREAMING TO LAPTOP/REMOTE';
+      $('roverNodeBadge').className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400';
+      logRover('Camera (' + facingMode + ') + Live Mic started. Auto-streaming to ESP32 (192.168.4.1)...');
+      speakReply('Ok Boss, Rover camera and microphone are streaming live to your laptop!');
+      espRole = 'rover';
+      state.espLiveEnabled = true;
+      if ($('btnStartPeerHost')) $('btnStartPeerHost').click();
+      broadcastEspOffer();
+    } catch (err) {
+      logRover('Camera error: ' + err.message);
+    }
+  }
+
+  $('btnStartRoverCam').addEventListener('click', startRoverCameraAndMic);
+  $('btnSwitchCam').addEventListener('click', () => {
+    facingMode = (facingMode === 'environment') ? 'user' : 'environment';
+    startRoverCameraAndMic();
+  });
+  $('btnRoverTestSpeaker').addEventListener('click', () => {
+    speakReply('Hello Shivanshu Boss! Main ' + state.botName + ' hoon. Bluetooth speaker bilkul mast kaam kar raha hai!');
+  });
+
+  $('btnLiveMicMute').addEventListener('click', () => {
+    state.roverMicMuted = !state.roverMicMuted;
+    const v = $('fpvVideo');
+    v.muted = state.roverMicMuted;
+    $('roverMicIcon').textContent = state.roverMicMuted ? '🔇' : '🎙️';
+    $('roverMicTxt').textContent = state.roverMicMuted ? 'Rover Mic: MUTED' : 'Rover Mic: ON';
+    $('btnLiveMicMute').classList.toggle('!border-red-400', state.roverMicMuted);
+  });
+
+  $('btnRecFpv').addEventListener('click', () => {
+    if (state.recording) {
+      state.recording = false;
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+      $('recTxt').textContent = 'REC FPV';
+      $('btnRecFpv').classList.remove('!bg-red-600', '!text-white');
+      return;
+    }
+    const v = $('fpvVideo');
+    const streamToRec = v.srcObject || $('hudCanvas').captureStream(30);
+    try {
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(streamToRec);
+      mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'MARS_X6_FPV_' + Date.now() + '.webm';
+        a.click();
+        speakReply('Ok Boss, FPV video recording saved to your phone!');
+      };
+      mediaRecorder.start();
+      state.recording = true;
+      $('recTxt').textContent = 'STOP REC';
+      $('btnRecFpv').classList.add('!bg-red-600', '!text-white');
+      speakReply('Recording live FPV feed and audio.');
+    } catch (e) {
+      speakReply('Recording started in simulation mode.');
+    }
+  });
+
+  $('btnStartPeerHost').addEventListener('click', () => {
+    if (typeof Peer === 'undefined') { logRover('PeerJS requires internet connection.'); return; }
+    const id = ($('peerRoomIdInput').value || 'MARS-X6-SHIVANSHU').trim();
+    saveStore('mars_room_id', id);
+    if (peer) peer.destroy();
+    peer = new Peer(id);
+    peer.on('open', pid => {
+      $('peerStatusTxt').textContent = 'Hosting Room: ' + pid + ' (Ready for Remote!)';
+      logRover('WebRTC Room hosted: ' + pid);
+    });
+    peer.on('call', call => {
+      if (localStream) call.answer(localStream);
+      else call.answer();
+      call.on('stream', remStream => {
+        const audio = new Audio();
+        audio.srcObject = remStream;
+        audio.play().catch(() => {});
+      });
+    });
+    peer.on('connection', conn => {
+      dataConn = conn;
+      conn.on('data', d => {
+        if (d.type === 'tts') speakReply(d.text);
+        else if (d.type === 'horn') { if (d.on) startHornSound(); else stopHornSound(); }
+        else if (d.type === 'cmd') handleUtterance(d.text);
+        else if (d.type === 'esp_cmd' && d.payload) { state.espLiveEnabled = true; sendEspCommand(d.payload); }
+      });
+    });
+  });
+
+  $('btnJoinPeerRoom').addEventListener('click', () => {
+    if (typeof Peer === 'undefined') return;
+    const targetId = ($('peerRoomIdInput').value || state.roomId).trim();
+    if (peer) peer.destroy();
+    peer = new Peer();
+    peer.on('open', () => {
+      ensureAudio();
+      dataConn = peer.connect(targetId);
+      dataConn.on('data', d => {
+        if (!d) return;
+        if (d.type === 'speaking') muteUntil = Date.now() + (d.on ? 15000 : 700);
+        else if (d.type === 'tts' && d.text) showSubtitle(d.text);
+      });
+      const outStream = audioDestNode ? audioDestNode.stream : new MediaStream();
+      try {
+        if (!outStream.getVideoTracks().length) {
+          const cv = document.createElement('canvas'); cv.width = 16; cv.height = 16;
+          cv.getContext('2d').fillRect(0, 0, 16, 16);
+          const vt = cv.captureStream(1).getVideoTracks()[0];
+          if (vt) outStream.addTrack(vt);
+        }
+      } catch (e) {}
+      const call = peer.call(targetId, outStream);
+      if (call) {
+        call.on('stream', roverStream => {
+          const v = $('fpvVideo');
+          v.srcObject = roverStream;
+          v.muted = state.roverMicMuted;
+          v.classList.remove('hidden');
+          v.play().catch(() => {});
+          speakReply('Connected to Rover live FPV camera and microphone!');
+        });
+      }
+      $('configModal').classList.add('hidden');
+    });
+  });
+
+  // Offline ESP32 /signal WebRTC P2P Engine (Rover Phone <-> Remote Phone over MARS-X6 Wi-Fi!)
+  let espPc = null;
+  let espRole = 'remote';
+
+  async function sigPost(toRole, dataObj) {
+    const base = (location.hostname === '192.168.4.1') ? '' : state.espUrl.replace(/\/$/, '');
+    try {
+      await fetch(base + '/signal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ to: toRole, data: dataObj })
+      });
+    } catch (e) {}
+  }
+
+  async function broadcastEspOffer() {
+    espRole = 'rover';
+    state.espLiveEnabled = true;
+    if (!localStream) await startRoverCameraAndMic();
+    if (!localStream) return;
+    if (espPc) espPc.close();
+    espPc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    localStream.getTracks().forEach(t => espPc.addTrack(t, localStream));
+    espPc.ontrack = e => {
+      const a = new Audio();
+      a.srcObject = e.streams[0];
+      a.play().catch(() => {});
+    };
+    const offer = await espPc.createOffer();
+    await espPc.setLocalDescription(offer);
+    setTimeout(async () => {
+      await sigPost('remote', { type: 'offer', sdp: espPc.localDescription });
+      logRover('Broadcasted Offline WebRTC Offer via ESP32 /signal');
+      speakReply('Ok Boss, live video offer sent to Remote Phone via ESP32 Wi-Fi!');
+    }, 600);
+  }
+
+  $('btnEspWebRtcSync').addEventListener('click', broadcastEspOffer);
+
+  // Poll ESP32 /signal mailbox when connected to ESP32
+  setInterval(async () => {
+    if (!state.espLiveEnabled) return;
+    const base = (location.hostname === '192.168.4.1') ? '' : state.espUrl.replace(/\/$/, '');
+    try {
+      const r = await fetch(base + '/signal?for=' + espRole);
+      const list = await r.json();
+      if (!Array.isArray(list) || !list.length) return;
+      for (const msg of list) {
+        if (!msg) continue;
+        if (msg.type === 'offer' && espRole === 'remote') {
+          if (espPc) espPc.close();
+          espPc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+          espPc.ontrack = ev => {
+            const v = $('fpvVideo');
+            v.srcObject = ev.streams[0];
+            v.muted = true;
+            v.classList.remove('hidden');
+            v.play().then(() => { v.muted = state.roverMicMuted; }).catch(() => {});
+          };
+          await espPc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+          const ans = await espPc.createAnswer();
+          await espPc.setLocalDescription(ans);
+          setTimeout(() => sigPost('rover', { type: 'answer', sdp: espPc.localDescription }), 500);
+        } else if (msg.type === 'answer' && espRole === 'rover' && espPc) {
+          await espPc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+          logRover('Remote Phone connected to Offline WebRTC stream!');
+        } else if (msg.type === 'tts') {
+          speakReply(msg.text);
+        }
+      }
+    } catch (e) {}
+  }, 1200);
+
+  // =========================================================================
+  // TABS, FULLSCREEN & AI CONFIG MODAL
+  // =========================================================================
+  function switchTab(tab) {
+    toggleDropdown(null);
+    $('viewRemote').classList.toggle('hidden', tab !== 'remote');
+    $('viewRover').classList.toggle('hidden', tab !== 'rover');
+    $('viewGuide').classList.toggle('hidden', tab !== 'guide');
+    $('tabRemote').className = 'px-2 py-0.5 rounded transition ' + (tab === 'remote' ? 'bg-[#fab515] text-black' : 'text-gray-300');
+    $('tabRover').className  = 'px-2 py-0.5 rounded transition ' + (tab === 'rover' ? 'bg-[#fab515] text-black' : 'text-gray-300');
+    $('tabGuide').className  = 'px-2 py-0.5 rounded transition ' + (tab === 'guide' ? 'bg-[#fab515] text-black' : 'text-gray-300');
+  }
+  $('tabRemote').addEventListener('click', () => switchTab('remote'));
+  $('tabRover').addEventListener('click', () => switchTab('rover'));
+  $('tabGuide').addEventListener('click', () => switchTab('guide'));
+
+  $('btnOpenAiModal').addEventListener('click', () => {
+    toggleDropdown(null);
+    $('configModal').classList.remove('hidden');
+  });
+  $('btnCloseModal').addEventListener('click', () => $('configModal').classList.add('hidden'));
+  $('btnEspConn').addEventListener('click', () => {
+    state.espLiveEnabled = !state.espLiveEnabled;
+    $('espStatusTxt').textContent = state.espLiveEnabled ? 'LIVE' : '12.1V';
+    $('espDot').className = 'w-2 h-2 rounded-full ' + (state.espLiveEnabled ? 'bg-[#fab515]' : 'bg-emerald-400');
+    if (state.espLiveEnabled) sendEspCommand({ cmd: 'arm' });
+  });
+
+  $('btnSaveConfig').addEventListener('click', () => {
+    state.botName = ($('cfgBotName').value || 'JARVIS').trim().toUpperCase();
+    state.voiceLang = $('cfgVoiceLang').value;
+    state.aiProvider = $('cfgAiProvider').value;
+    state.apiKey = $('cfgApiKey').value.trim();
+    state.espUrl = ($('cfgEspUrl').value || 'http://192.168.4.1').trim();
+    state.pairingKey = ($('cfgPairingKey').value || 'mars1234').trim();
+
+    saveStore('mars_bot_name', state.botName);
+    saveStore('mars_voice_lang', state.voiceLang);
+    saveStore('mars_ai_provider', state.aiProvider);
+    saveStore('mars_api_key', state.apiKey);
+    saveStore('mars_esp_url', state.espUrl);
+    saveStore('mars_pair_key', state.pairingKey);
+
+    $('configModal').classList.add('hidden');
+    speakReply('Ok Boss! My name is now ' + state.botName + ' and settings are saved!');
+  });
+
+  $('btnTestAiVoice').addEventListener('click', () => {
+    const nm = ($('cfgBotName').value || 'JARVIS').trim();
+    speakReply('Namaste Shivanshu Boss! Main ' + nm + ' bol raha hoon, aapka MARS-X6 Rover AI assistant!');
+  });
+
+  $('btnFullscreen').addEventListener('click', () => {
+    const el = document.documentElement;
+    if (!document.fullscreenElement) {
+      (el.requestFullscreen || el.webkitRequestFullscreen || function(){}).call(el);
+    } else {
+      (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
+    }
+  });
+
+  // =========================================================================
+  // 60FPS CLEAN FPV HUD OVERLAY
+  // =========================================================================
+  const canvas = $('hudCanvas');
+  const ctx = canvas.getContext('2d');
+  let gridOffset = 0;
+  let headingDeg = 0;
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function drawHudFrame() {
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const vidHidden = $('fpvVideo').classList.contains('hidden');
+    if (vidHidden && window._latestRelayImg && window._latestRelayImg.complete && window._latestRelayImg.naturalWidth > 0) {
+      ctx.drawImage(window._latestRelayImg, 0, 0, w, h);
+    } else if (vidHidden) {
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#090b10');
+      grad.addColorStop(0.46, '#16131a');
+      grad.addColorStop(0.48, '#261a10');
+      grad.addColorStop(1, '#101014');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    const avgSpd = (state.motorLF + state.motorLR + state.motorRF + state.motorRR) / 4;
+    const turnDiff = ((state.motorLF + state.motorLR) - (state.motorRF + state.motorRR)) * 0.015;
+    gridOffset = (gridOffset + avgSpd * 0.08) % 40;
+    headingDeg = (headingDeg + turnDiff + 360) % 360;
+
+    if (vidHidden && !(window._latestRelayImg && window._latestRelayImg.complete && window._latestRelayImg.naturalWidth > 0)) {
+      const horizonY = h * 0.46;
+      ctx.strokeStyle = 'rgba(250, 181, 21, 0.16)';
+      ctx.lineWidth = 1;
+      for (let i = -10; i <= 10; i++) {
+        ctx.beginPath();
+        ctx.moveTo(w / 2 + i * 26, horizonY);
+        ctx.lineTo(w / 2 + i * 165, h);
+        ctx.stroke();
+      }
+      for (let r = 0; r < 8; r++) {
+        const y = horizonY + Math.pow((r + ((gridOffset + 40) % 40) / 40) / 8, 1.7) * (h - horizonY);
+        if (y > horizonY && y < h) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    const cx = w / 2, cy = h * 0.50;
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 24, 0, Math.PI * 2);
+    ctx.moveTo(cx - 36, cy); ctx.lineTo(cx - 14, cy);
+    ctx.moveTo(cx + 14, cy); ctx.lineTo(cx + 36, cy);
+    ctx.moveTo(cx, cy - 36); ctx.lineTo(cx, cy - 14);
+    ctx.moveTo(cx, cy + 14); ctx.lineTo(cx, cy + 36);
+    ctx.stroke();
+
+    const rx = 28, ry = 68, rw = 44, rh = 58;
+    ctx.fillStyle = 'rgba(18, 18, 22, 0.72)';
+    ctx.strokeStyle = 'rgba(250, 181, 21, 0.7)';
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(rx, ry, rw, rh);
+    ctx.fillRect(rx, ry, rw, rh);
+
+    ctx.fillStyle = '#fab515';
+    ctx.font = 'bold 9px Orbitron, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('1x L298N | ' + state.maxMotorV.toFixed(1) + 'V', rx - 6, ry + rh + 14);
+
+    const t = Date.now();
+    const flOn = state.ledMode === 'hazard' ? (Math.floor(t / 300) % 2 === 0) :
+                 state.ledMode === 'police' ? (Math.floor(t / 150) % 2 === 0) :
+                 state.ledMode === 'disco' ? (Math.floor(t / 120) % 4 === 0) : state.leds.fl;
+    const frOn = state.ledMode === 'hazard' ? (Math.floor(t / 300) % 2 === 0) :
+                 state.ledMode === 'police' ? (Math.floor(t / 150) % 2 === 1) :
+                 state.ledMode === 'disco' ? (Math.floor(t / 120) % 4 === 1) : state.leds.fr;
+    const rlOn = state.ledMode === 'hazard' ? (Math.floor(t / 300) % 2 === 0) :
+                 state.ledMode === 'police' ? (Math.floor(t / 150) % 2 === 0) :
+                 state.ledMode === 'disco' ? (Math.floor(t / 120) % 4 === 2) : state.leds.rl;
+    const rrOn = state.ledMode === 'hazard' ? (Math.floor(t / 300) % 2 === 0) :
+                 state.ledMode === 'police' ? (Math.floor(t / 150) % 2 === 1) :
+                 state.ledMode === 'disco' ? (Math.floor(t / 120) % 4 === 3) : state.leds.rr;
+
+    const drawLed = (lx, ly, on, col) => {
+      ctx.fillStyle = on ? col : '#333';
+      ctx.beginPath(); ctx.arc(lx, ly, 3.5, 0, Math.PI * 2); ctx.fill();
+    };
+    drawLed(rx + 5, ry + 5, flOn, '#fde047');
+    drawLed(rx + rw - 5, ry + 5, frOn, '#fde047');
+    drawLed(rx + 5, ry + rh - 5, rlOn, '#ef4444');
+    drawLed(rx + rw - 5, ry + rh - 5, rrOn, '#ef4444');
+
+    const wheels = [
+      { x: rx - 8, y: ry + 3,  val: state.motorLF },
+      { x: rx - 8, y: ry + 22, val: state.motorLR },
+      { x: rx - 8, y: ry + 41, val: state.motorLR },
+      { x: rx + rw + 2, y: ry + 3,  val: state.motorRF },
+      { x: rx + rw + 2, y: ry + 22, val: state.motorRR },
+      { x: rx + rw + 2, y: ry + 41, val: state.motorRR }
+    ];
+    wheels.forEach(wItem => {
+      ctx.fillStyle = wItem.val > 0 ? '#22c55e' : (wItem.val < 0 ? '#ef4444' : '#52525b');
+      ctx.fillRect(wItem.x, wItem.y, 6, 13);
+    });
+
+    if (state.pumpOn) {
+      ctx.fillStyle = 'rgba(0, 240, 255, 0.65)';
+      for (let p = 0; p < 8; p++) {
+        const px = rx + rw / 2 + (Math.sin(t * 0.01 + p) * 16);
+        const py = ry - 6 - ((t * 0.06 + p * 5) % 22);
+        ctx.beginPath();
+        ctx.arc(px, py, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    requestAnimationFrame(drawHudFrame);
+  }
+
+  // =========================================================================
+  // FIREWALL-PROOF ESP32 /frame LIVE VIDEO RELAY (ROVER PHONE -> LAPTOP)
+  // =========================================================================
+  const capCanvas = document.createElement('canvas');
+  capCanvas.width = 320;
+  capCanvas.height = 180;
+  const capCtx = capCanvas.getContext('2d');
+  let frameSenderTimer = null;
+  let frameBusy = false;
+
+  function startEspFrameSender() {
+    if (frameSenderTimer) clearInterval(frameSenderTimer);
+    frameSenderTimer = setInterval(async () => {
+      if (true) return; // Disabled low-res ESP32 frame relay to keep 100% HD 30fps WebRTC
+      const v = $('fpvVideo');
+      if (!v || v.readyState < 2) return;
+      frameBusy = true;
+      try {
+        capCtx.drawImage(v, 0, 0, 320, 180);
+        const jpgData = capCanvas.toDataURL('image/jpeg', 0.42);
+        const base = (location.hostname === '192.168.4.1') ? '' : state.espUrl.replace(/\/$/, '');
+        await fetch(base + '/frame', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: jpgData
+        });
+      } catch (e) {}
+      frameBusy = false;
+    }, 140);
+  }
+
+  // Laptop / Remote Phone pulls live frames from ESP32 /frame automatically
+  window._latestRelayImg = new Image();
+  let pullBusy = false;
+  setInterval(async () => {
+    if (true) return; // Disabled low-res ESP32 frame polling
+    if (!$('fpvVideo').classList.contains('hidden')) return; // WebRTC already playing
+    pullBusy = true;
+    const base = (location.hostname === '192.168.4.1') ? '' : state.espUrl.replace(/\/$/, '');
+    try {
+      const r = await fetch(base + '/frame');
+      if (r.status === 200) {
+        const txt = await r.text();
+        if (txt && txt.startsWith('data:image/')) {
+          window._latestRelayImg.src = txt;
+        }
+      }
+    } catch (e) {}
+    pullBusy = false;
+  }, 140);
+
+  // =========================================================================
+  // LAPTOP KEYBOARD GAMING CONTROLS (W/A/S/D, Arrow Keys, Q/E Spin, Space Stop)
+  // =========================================================================
+  const heldKeys = new Set();
+  window.addEventListener('keydown', e => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+    const k = e.key.toLowerCase();
+    if (k === ' ') {
+      e.preventDefault();
+      heldKeys.clear();
+      setLeverPercent(0);
+      state.steerDir = 0;
+      state.spinDir = 0;
+      computeWheelTorque();
+      sendEspCommand({ cmd: 'stop' });
+      return;
+    }
+    if (['w', 's', 'a', 'd', 'q', 'e', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
+      e.preventDefault();
+      heldKeys.add(k);
+      updateKeyboardDrive();
+    }
+  });
+
+  window.addEventListener('keyup', e => {
+    const k = e.key.toLowerCase();
+    if (heldKeys.has(k)) {
+      heldKeys.delete(k);
+      updateKeyboardDrive();
+    }
+  });
+
+  function updateKeyboardDrive() {
+    if (heldKeys.has('q')) state.spinDir = -1;
+    else if (heldKeys.has('e')) state.spinDir = 1;
+    else state.spinDir = 0;
+
+    if (heldKeys.has('a') || heldKeys.has('arrowleft')) state.steerDir = -1;
+    else if (heldKeys.has('d') || heldKeys.has('arrowright')) state.steerDir = 1;
+    else state.steerDir = 0;
+
+    if (heldKeys.has('w') || heldKeys.has('arrowup')) {
+      if (state.gear !== 'F') setGear('F', false);
+      setLeverPercent(85);
+    } else if (heldKeys.has('s') || heldKeys.has('arrowdown')) {
+      if (state.gear !== 'R') setGear('R', false);
+      setLeverPercent(85);
+    } else if (state.springReturn && !leverDragging) {
+      setLeverPercent(0);
+    } else {
+      computeWheelTorque();
+    }
+  }
+
+
+  // Save Phone Hotspot SSID & Password directly to ESP32 Flash (/wifi)
+  if ($('btnSaveHotspot')) {
+    $('btnSaveHotspot').addEventListener('click', async () => {
+      const ssid = ($('cfgHotspotSsid').value || '').trim();
+      const pass = ($('cfgHotspotPass').value || '').trim();
+      const base = (location.hostname === '192.168.4.1') ? '' : state.espUrl.replace(/\/$/, '');
+      try {
+        await fetch(base + '/wifi', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ ssid, pass })
+        });
+        $('hotspotIpStatus').textContent = 'Hotspot saved! ESP32 is connecting to "' + ssid + '" (check IP in 5 sec)...';
+        speakReply('Ok Boss, Hotspot settings saved in ESP32 memory!');
+        setTimeout(async () => {
+          try {
+            const r = await fetch(base + '/wifi');
+            const j = await r.json();
+            if (j && j.sta_ip && j.sta_ip !== '0.0.0.0') {
+              $('hotspotIpStatus').textContent = 'Connected! ESP32 Hotspot IP: http://' + j.sta_ip + ' (Copy this IP for Remote/Laptop)';
+              $('cfgEspUrl').value = 'http://' + j.sta_ip;
+              state.espUrl = 'http://' + j.sta_ip;
+              saveStore('mars_esp_url', state.espUrl);
+            }
+          } catch (e) {}
+        }, 5500);
+      } catch (e) {
+        $('hotspotIpStatus').textContent = 'Connect to MARS-X6 Wi-Fi (192.168.4.1) first to save Hotspot settings.';
+      }
+    });
+  }
+
+  requestAnimationFrame(drawHudFrame);
+})();
+</script>
+
+<!-- =========================================================================
+     ZIYA 3D VRM AVATAR + PORTRAIT/LANDSCAPE AUTO-ADAPT + F15 HOTSPOT + SIR MODE
+     ========================================================================= -->
+<style>
+  /* Responsive Portrait & Landscape 3D Avatar Positioning */
+  #ziyaVrmStage {
+    pointer-events: none;
+    position: fixed;
+    z-index: 20;
+    transition: all 0.28s ease;
+  }
+  /* Default Mode 0: Adaptive Center Stage (Fits both Portrait & Landscape!) */
+  #ziyaVrmStage.mode-center {
+    bottom: 64px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(260px, 62vw);
+    height: min(320px, 46vh);
+  }
+  @media (orientation: portrait) {
+    #ziyaVrmStage.mode-center {
+      bottom: 195px;
+      width: min(290px, 78vw);
+      height: min(370px, 48vh);
+    }
+  }
+  /* Mode 1: Corner PiP (Unobstructed FPV Driving) */
+  #ziyaVrmStage.mode-pip {
+    top: 52px;
+    right: 10px;
+    width: 135px;
+    height: 175px;
+  }
+  /* Mode 2: Fullscreen Ziya Companion Mode (Portrait & Landscape Full) */
+  #ziyaVrmStage.mode-full {
+    inset: 42px 0 0 0;
+    width: 100vw;
+    height: calc(100vh - 42px);
+  }
+</style>
+
+<div id="ziyaVrmStage" class="mode-center">
+  <canvas id="ziyaVrmCanvas" class="w-full h-full block"></canvas>
+</div>
+
+<!-- Floating Left Quick-Action Pill Bar -->
+<div class="fixed top-14 left-2.5 z-30 flex flex-wrap items-center gap-1.5">
+  <button id="btnZiya3dToggle" class="hud-pill !bg-[#fab515] !text-black font-bold cursor-pointer shadow">
+    👩‍🚀 Ziya 3D: ON
+  </button>
+  <button id="btnZiya3dLayout" class="hud-pill hover:border-[#fab515] cursor-pointer" title="Switch Center / Corner PiP / Fullscreen">
+    📐 View: Center
+  </button>
+  <label class="hud-pill hover:border-cyan-400 text-cyan-300 cursor-pointer" title="Load any .vrm character from Phone/PC">
+    📂 Change .VRM
+    <input id="vrmFileInput" type="file" accept=".vrm" class="hidden">
+  </label>
+  <button id="btnSirShare" class="hud-pill !bg-emerald-500/25 !border-emerald-400 text-emerald-300 font-bold cursor-pointer">
+    🎓 Sir Control
+  </button>
+  <button id="btnAutoFindF15" class="hud-pill !bg-cyan-500/25 !border-cyan-400 text-cyan-300 font-bold cursor-pointer" title="Auto-find ESP32 on F15 Hotspot">
+    🔍 Find ESP32
+  </button>
+</div>
+
+<!-- Sir / Guest Handover Modal (Offline 192.168.4.1 + Online Anywhere) -->
+<div id="sirModal" class="fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-md flex items-center justify-center p-3">
+  <div class="hud-glass w-full max-w-md rounded-2xl p-4 border border-[#fab515] space-y-3 text-xs">
+    <div class="flex items-center justify-between border-b border-white/15 pb-2">
+      <h3 class="font-hud text-sm font-black text-[#fab515]">🎓 SIR / GUEST CONTROL HANDOVER</h3>
+      <button id="btnCloseSirModal" class="px-2.5 py-1 rounded bg-white/10 font-bold">✕</button>
+    </div>
+
+    <div class="bg-black/60 p-3 rounded-xl border border-emerald-400/50 space-y-1">
+      <div class="font-hud font-bold text-emerald-400">📶 1. Sir Paas Khade Hain (Offline Direct Wi-Fi)</div>
+      <p class="text-gray-300 leading-relaxed">
+        • Sir apne phone ka Wi-Fi kholein aur <b>MARS-X6</b> (Password: <code>mars12345</code>) se connect karein.<br>
+        • Browser me kholein: <b class="text-[#fab515] font-mono">http://192.168.4.1</b><br>
+        • Bina kisi app ke Sir seedha gadi chala sakte hain!
+      </p>
+    </div>
+
+    <div class="bg-black/60 p-3 rounded-xl border border-cyan-400/50 space-y-2">
+      <div class="font-hud font-bold text-cyan-300">🌍 2. Sir Door Hain (Online Control + Live Camera)</div>
+      <p class="text-gray-300 leading-relaxed">
+        • Apna F15 phone Rover par lagayein aur niche <b>Start Rover Relay</b> dabayein.<br>
+        • Sir ko WhatsApp par Online Link bhejein (Room ID: <b id="sirRoomTxt" class="text-[#fab515]">MARS-X6-SHIVANSHU</b>).
+      </p>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btnStartOnlineRelay" class="py-2 rounded-xl bg-[#fab515] text-black font-hud font-bold text-[11px]">
+          🚀 Start Rover Relay
+        </button>
+        <button id="btnShareWhatsapp" class="py-2 rounded-xl bg-emerald-500 text-black font-hud font-bold text-[11px]">
+          📲 Send Link to Sir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/",
+    "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.1.2/lib/three-vrm.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+
+(function setupMasterZiyaSystem() {
+  // 1. Pre-fill F15 Hotspot (F15 / 12348765) & Ziya Defaults
+  const ssidIn = document.getElementById('cfgHotspotSsid');
+  const passIn = document.getElementById('cfgHotspotPass');
+  if (ssidIn && !ssidIn.value) ssidIn.value = 'F15';
+  if (passIn && !passIn.value) passIn.value = '12348765';
+
+  // Add Dynamic Gemini Live Model Name selector inside 🧠 AI API Modal so APK never needs recompiling!
+  const cfgModalGrid = document.querySelector('#configModal .grid');
+  if (cfgModalGrid && !document.getElementById('cfgGeminiModel')) {
+    const div = document.createElement('div');
+    div.innerHTML = '<label class="block text-gray-300 font-semibold mb-1">⚡ Gemini / Live Model ID (Editable)</label>' +
+      '<input id="cfgGeminiModel" type="text" value="' + (localStorage.getItem('mars_gemini_model') || 'models/gemini-3.8-live') + '" class="w-full bg-black/70 border border-white/25 rounded-lg px-3 py-2 text-white font-mono focus:border-[#fab515] focus:outline-none">';
+    cfgModalGrid.appendChild(div);
+    const saveBtn = document.getElementById('btnSaveConfig');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', () => {
+        const mVal = document.getElementById('cfgGeminiModel')?.value?.trim();
+        if (mVal) localStorage.setItem('mars_gemini_model', mVal);
+        if (window.AndroidBridge && window.AndroidBridge.saveConfig) {
+          window.AndroidBridge.saveConfig(JSON.stringify({
+            botName: document.getElementById('cfgBotName')?.value || 'ZIYA',
+            geminiLiveModel: mVal || 'models/gemini-3.8-live',
+            apiKey: document.getElementById('cfgApiKey')?.value || '',
+            espUrl: document.getElementById('cfgEspUrl')?.value || 'http://192.168.4.1'
+          }));
+        }
+      });
+    }
+  }
+
+  // 2. Sir Control Modal & WhatsApp Share
+  const sirModal = document.getElementById('sirModal');
+  document.getElementById('btnSirShare').onclick = () => sirModal.classList.remove('hidden');
+  document.getElementById('btnCloseSirModal').onclick = () => sirModal.classList.add('hidden');
+
+  document.getElementById('btnStartOnlineRelay').onclick = () => {
+    sirModal.classList.add('hidden');
+    const camBtn = document.getElementById('btnStartRoverCam');
+    if (camBtn) camBtn.click();
+  };
+
+  document.getElementById('btnShareWhatsapp').onclick = () => {
+    const room = (document.getElementById('peerRoomIdInput')?.value || 'MARS-X6-SHIVANSHU').trim();
+    const baseUrl = window.location.href.startsWith('http') && !window.location.hostname.startsWith('192.168.')
+      ? window.location.href.split('?')[0]
+      : 'https://shivanshu.online/mars-x6/';
+    const onlineUrl = baseUrl + '?room=' + encodeURIComponent(room);
+    const msg = 'Namaste Sir! MARS-X6 (Ziya AI Rover) ko Online Live Camera ke sath chalane ke liye ye link kholein: ' + onlineUrl;
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  };
+
+  // Auto-connect if Sir opens ?room=... link
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('room')) {
+    const rIn = document.getElementById('peerRoomIdInput');
+    if (rIn) rIn.value = params.get('room');
+    setTimeout(() => {
+      const joinBtn = document.getElementById('btnJoinPeerRoom');
+      if (joinBtn) joinBtn.click();
+    }, 1400);
+  }
+
+  // 3. Smart Auto-Scanner for F15 Hotspot & 192.168.4.1
+  async function probeUrl(url, ms) {
+    try {
+      const c = new AbortController();
+      const t = setTimeout(() => c.abort(), ms);
+      const r = await fetch(url + '/wifi', { signal: c.signal });
+      clearTimeout(t);
+      if (r.ok) return url;
+    } catch (e) {}
+    return null;
+  }
+
+  async function autoFindEsp32(showMsg) {
+    const st = document.getElementById('espStatusTxt');
+    if (showMsg && st) st.textContent = 'Scanning...';
+    const quick = [
+      localStorage.getItem('mars_esp_url') || 'http://192.168.4.1',
+      'http://mars-x6.local',
+      'http://192.168.4.1'
+    ];
+    for (const u of quick) {
+      if (await probeUrl(u, 550)) {
+        applyEspHost(u);
+        return;
+      }
+    }
+    // Scan Samsung F15 Hotspot IP ranges
+    for (const sub of ['192.168.43.', '192.168.225.', '192.168.137.', '192.168.1.']) {
+      const batch = [];
+      for (let i = 2; i <= 254; i++) {
+        batch.push(probeUrl('http://' + sub + i, 320));
+        if (batch.length >= 40 || i === 254) {
+          const res = await Promise.all(batch);
+          const found = res.find(Boolean);
+          if (found) { applyEspHost(found); return; }
+          batch.length = 0;
+        }
+      }
+    }
+    if (showMsg && st) st.textContent = '12.1V';
+  }
+
+  function applyEspHost(url) {
+    localStorage.setItem('mars_esp_url', url);
+    const inp = document.getElementById('cfgEspUrl');
+    if (inp) inp.value = url;
+    const st = document.getElementById('espStatusTxt');
+    if (st) st.textContent = url.replace('http://', '');
+  }
+
+  document.getElementById('btnAutoFindF15').onclick = () => autoFindEsp32(true);
+  setTimeout(() => autoFindEsp32(false), 1000);
+
+  // 4. Open Annie 3D VRM Character Renderer (Works in both Portrait & Landscape!)
+  const stage = document.getElementById('ziyaVrmStage');
+  const canvas = document.getElementById('ziyaVrmCanvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(26, 1, 0.1, 20);
+
+  function syncViewportSize() {
+    const w = Math.max(100, stage.clientWidth);
+    const h = Math.max(100, stage.clientHeight);
+    renderer.setSize(w, h);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    camera.aspect = w / h;
+    // Adjust framing automatically for Portrait vs Landscape
+    const isPortrait = window.innerHeight > window.innerWidth;
+    camera.position.set(0, isPortrait ? 1.33 : 1.36, isPortrait ? 1.55 : 1.38);
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', syncViewportSize);
+  window.addEventListener('orientationchange', () => setTimeout(syncViewportSize, 150));
+  syncViewportSize();
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.85);
+  dirLight.position.set(1, 2, 2);
+  scene.add(dirLight, new THREE.AmbientLight(0xffffff, 0.95));
+
+  let currentVrm = null;
+  let showVrm = true;
+  let layoutIdx = 0;
+  const layoutClasses = ['mode-center', 'mode-pip', 'mode-full'];
+  const layoutNames = ['📐 View: Center', '📐 View: Corner PiP', '📐 View: Fullscreen'];
+
+  const loader = new GLTFLoader();
+  loader.register(p => new VRMLoaderPlugin(p));
+
+  function loadVrmCharacter(url, fallbackUrl) {
+    loader.load(
+      url,
+      gltf => {
+        const vrm = gltf.userData.vrm;
+        if (currentVrm) scene.remove(currentVrm.scene);
+        VRMUtils.rotateVRM0(vrm);
+        currentVrm = vrm;
+        scene.add(vrm.scene);
+        const lArm = vrm.humanoid?.getNormalizedBoneNode('leftUpperArm');
+        const rArm = vrm.humanoid?.getNormalizedBoneNode('rightUpperArm');
+        if (lArm) lArm.rotation.z = 1.15;
+        if (rArm) rArm.rotation.z = -1.15;
+        syncViewportSize();
+      },
+      undefined,
+      () => {
+        if (fallbackUrl) loadVrmCharacter(fallbackUrl, null);
+      }
+    );
+  }
+
+  // Try local ziya_avatar.vrm first, fallback to CDN VRM so avatar always renders out-of-the-box!
+  loadVrmCharacter(
+    'ziya_avatar.vrm',
+    'https://raw.githubusercontent.com/pixiv/three-vrm/dev/packages/three-vrm/examples/models/VRM1_Constraint_Twist_Sample.vrm'
+  );
+
+  document.getElementById('vrmFileInput').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (f) loadVrmCharacter(URL.createObjectURL(f), null);
+  });
+
+  document.getElementById('btnZiya3dToggle').onclick = e => {
+    showVrm = !showVrm;
+    stage.style.opacity = showVrm ? '1' : '0';
+    e.currentTarget.textContent = showVrm ? '👩‍🚀 Ziya 3D: ON' : '👩‍🚀 Ziya 3D: OFF';
+  };
+
+  document.getElementById('btnZiya3dLayout').onclick = e => {
+    layoutIdx = (layoutIdx + 1) % 3;
+    stage.className = layoutClasses[layoutIdx];
+    e.currentTarget.textContent = layoutNames[layoutIdx];
+    setTimeout(syncViewportSize, 300);
+  };
+
+  const clock = new THREE.Clock();
+  function animateLoop() {
+    requestAnimationFrame(animateLoop);
+    if (!showVrm || !currentVrm) return;
+    const dt = clock.getDelta();
+    const t = clock.getElapsedTime();
+    const em = currentVrm.expressionManager;
+    const isSpeaking = window.speechSynthesis?.speaking;
+
+    if (em) {
+      const blink = (t % 4.0 > 3.82) ? Math.sin(((t % 4.0) - 3.82) * Math.PI * 5.5) : 0;
+      em.setValue('blink', Math.max(0, blink));
+      const mouth = isSpeaking ? (0.32 + 0.55 * Math.abs(Math.sin(t * 15.5))) : 0;
+      em.setValue('aa', mouth);
+      em.setValue('oh', mouth * 0.42 * Math.abs(Math.cos(t * 10)));
+      em.setValue('happy', isSpeaking ? 0.35 : 0.12);
+    }
+
+    const head = currentVrm.humanoid?.getNormalizedBoneNode('head');
+    const spine = currentVrm.humanoid?.getNormalizedBoneNode('spine');
+    if (head) {
+      head.rotation.y = Math.sin(t * 0.85) * 0.08;
+      head.rotation.x = Math.sin(t * 1.3) * 0.04 + (isSpeaking ? Math.sin(t * 6) * 0.03 : 0);
+    }
+    if (spine) {
+      spine.rotation.x = Math.sin(t * 1.6) * 0.02;
+    }
+    currentVrm.update(dt);
+    renderer.render(scene, camera);
+  }
+  animateLoop();
+})();
+</script>
+
+</body>
+</html>
